@@ -1,0 +1,684 @@
+---
+title: "Hypoxia and Cognitive Ability in Humans: A Systematic Review and Meta-Analysis - Supplementary Material"
+author: "Daniel J McKeown"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    toc: false
+    number_sections: false
+---
+
+This report presents the results of a series of meta-analytic models examining the effects of hypoxia on cognitive performance. For each cognitive domain, two models are presented, as well as a funnel plot and a model accounting for publication bias:
+
+- **Main effect model**: Estimates the overall effect of hypoxia on the cognitive outcome across studies, without accounting for additional predictors.
+- **Moderator model**: Includes study-level moderators (e.g., severity , duration, and type of exposure, cognitive domain/task measure, and participant age) to examine whether these factors explain variability in effect sizes across studies.
+- **Funnel plot**: Funnel plots are also included to visualise the distribution of effect sizes included in each model.
+- **Corrected model**: To control for potentional publication bias, the main effect model was corrected using the trimfill function of the metafor package.
+
+All models were fit using the `metafor` package in R, with standardized mean differences (SMDH) as the effect size metric and random effects specified at the study level.
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,     # hides code
+  message = FALSE,
+  warning = FALSE
+)
+library(metafor)
+library(readr)
+library(dplyr)
+library(knitr)
+library(kableExtra)  # for prettier tables
+```
+
+
+```{r}
+cog_ability <- read_csv("C:/Users/Hypox//OneDrive - Bond University//OXYNAV//2025//Systematic review//cog_ability_meta.csv")
+
+#Filter Malle et al., 2013 due to being an outlier
+cog_ability_filt <- cog_ability[!grepl("Malle et al., 2013", cog_ability$study), ]
+
+# Log transform Duration (adding 1 to avoid log(0))
+cog_ability_filt$log_duration <- log(cog_ability_filt$Duration + 1)
+```
+
+**Cognitive Ability Domain**
+```{r}
+# Model with no moderators
+cog_meta_red <- rma(m1i = Mean.2,
+                    m2i = Mean.1,
+                    sd1i = SD.2,
+                    sd2i = SD.1,
+                    n1i = N.2,
+                    n2i = N.1,
+                    measure = "SMDH",
+                    data = cog_ability_filt,
+                    method = "REML")
+
+# Extract the main coefficient table (as a data frame)
+model_tbl <- as.data.frame(summary(cog_meta_red)$beta)
+colnames(model_tbl) <- "Estimate"
+
+# Combine with SE, zval, pval, ci.lb, ci.ub
+model_stats <- data.frame(
+  Estimate = summary(cog_meta_red)$beta,
+  SE       = summary(cog_meta_red)$se,
+  zval     = summary(cog_meta_red)$zval,
+  pval     = summary(cog_meta_red)$pval,
+  ci.lb    = summary(cog_meta_red)$ci.lb,
+  ci.ub    = summary(cog_meta_red)$ci.ub
+)
+
+# Round and format nicely
+model_stats <- round(model_stats, 3)
+
+# Display with kable
+kable(model_stats, caption = "Reduced Model Main Effect") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+
+
+model_data <- escalc(measure = "SMDH", 
+                  m1i = Mean.2, sd1i = SD.2, n1i = N.2, 
+                  m2i = Mean.1, sd2i = SD.1, n2i = N.1,
+                  slab = paste(study),
+                  data = cog_ability_filt,
+                  var.names = c("SMDH", "SMDH_var"))
+
+cog_meta_full <- rma.mv(SMDH, SMDH_var,
+              mods = ~ Severity + log_duration + Age + domain,
+              random = ~ 1 | study,
+              data = model_data,
+              method = "REML")
+
+# Get the model summary
+summary_full <- summary(cog_meta_full)
+
+# Extract moderator info
+mod_results <- data.frame(
+  Estimate = summary_full$beta[,1],
+  SE = summary_full$se,
+  zval = summary_full$zval,
+  pval = summary_full$pval,
+  CI_Lower = summary_full$ci.lb,
+  CI_Upper = summary_full$ci.ub
+)
+rownames(mod_results) <- gsub("log_duration", "Duration ", rownames(mod_results))
+rownames(mod_results) <- gsub("domain", "Domain: ", rownames(mod_results))
+
+# Round for presentation
+mod_results <- mod_results %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+# Show as table
+kable(mod_results, caption = "Full Model Moderator Effects") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+
+#Funnel plot
+funnel.rma(cog_meta_red)
+
+#Corrected trimfill model
+tf_model <- trimfill(cog_meta_red)
+tf_summary <- summary(tf_model)
+
+# Extract the main coefficient table (as a data frame)
+tf_model_tbl <- as.data.frame(tf_summary$beta)
+colnames(tf_model_tbl) <- "Estimate"
+
+# Combine with SE, zval, pval, ci.lb, ci.ub
+tf_model_stats <- data.frame(
+  Estimate = tf_summary$beta,
+  SE       = tf_summary$se,
+  zval     = tf_summary$zval,
+  pval     = tf_summary$pval,
+  ci.lb    = tf_summary$ci.lb,
+  ci.ub    = tf_summary$ci.ub
+)
+
+# Round and format nicely
+tf_model_stats <- round(tf_model_stats, 3)
+
+# Display with kable (same style as the reduced model)
+kable(tf_model_stats, caption = "Trim and Fill Model Effect") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+
+```
+
+**Memory Domain**
+```{r}
+memory_data <- cog_ability_filt %>%
+  filter(measure %in% c("working memory (score)", 
+                        "learning and memory (score)", 
+                        "short-term memory (score)",
+                        "associative memory (score)", 
+                        "long-term memory (score)", 
+                        "involuntary memory (score)", 
+                        "visual memory (score)", 
+                        "verbal memory (score)", 
+                        "episodic memory (score)")
+         )
+
+
+# Compute SMD (Hedges' g) and variance
+memory_meta_red <-rma(m1i = Mean.2,
+               m2i = Mean.1,
+               sd1i = SD.2,
+               sd2i = SD.1,
+               n1i = N.2,
+               n2i = N.1,
+               measure = "SMDH",
+               data = memory_data,
+               method = "REML")
+
+# Extract the main coefficient table (as a data frame)
+model_tbl <- as.data.frame(summary(memory_meta_red)$beta)
+colnames(model_tbl) <- "Estimate"
+
+# Combine with SE, zval, pval, ci.lb, ci.ub
+model_stats <- data.frame(
+  Estimate = summary(memory_meta_red)$beta,
+  SE       = summary(memory_meta_red)$se,
+  zval     = summary(memory_meta_red)$zval,
+  pval     = summary(memory_meta_red)$pval,
+  ci.lb    = summary(memory_meta_red)$ci.lb,
+  ci.ub    = summary(memory_meta_red)$ci.ub
+)
+
+# Round and format nicely
+model_stats <- round(model_stats, 3)
+
+# Display with kable
+kable(model_stats, caption = "Reduced Model Main Effect") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+
+
+# Compute SMD (Hedges' g) and variance
+model_data <- escalc(measure = "SMDH", 
+                  m1i = Mean.2, sd1i = SD.2, n1i = N.2, 
+                  m2i = Mean.1, sd2i = SD.1, n2i = N.1,
+                  slab = paste(study),
+                  data = memory_data,
+                  var.names = c("SMDH", "SMDH_var"))
+
+memory_meta_full <- rma.mv(SMDH, SMDH_var,
+              mods = ~ Severity + log_duration + T.2 + Age + measure,
+              random = ~ 1 | study,
+              data = model_data,
+              method = "REML")
+
+# Get the model summary
+summary_full <- summary(memory_meta_full)
+
+# Extract moderator info
+mod_results <- data.frame(
+  Estimate = summary_full$beta[,1],
+  SE = summary_full$se,
+  zval = summary_full$zval,
+  pval = summary_full$pval,
+  CI_Lower = summary_full$ci.lb,
+  CI_Upper = summary_full$ci.ub
+)
+
+rownames(mod_results) <- gsub("log_duration", "Duration ", rownames(mod_results))
+rownames(mod_results) <- gsub("measure", "Measure: ", rownames(mod_results))
+rownames(mod_results) <- gsub("T.2", "Type: ", rownames(mod_results))
+
+# Round for presentation
+mod_results <- mod_results %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+# Show as table
+kable(mod_results, caption = "Full Model Moderator Effects") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+
+funnel.rma(memory_meta_red)
+
+#Corrected trimfill model
+tf_model <- trimfill(memory_meta_red)
+tf_summary <- summary(tf_model)
+
+# Extract the main coefficient table (as a data frame)
+tf_model_tbl <- as.data.frame(tf_summary$beta)
+colnames(tf_model_tbl) <- "Estimate"
+
+# Combine with SE, zval, pval, ci.lb, ci.ub
+tf_model_stats <- data.frame(
+  Estimate = tf_summary$beta,
+  SE       = tf_summary$se,
+  zval     = tf_summary$zval,
+  pval     = tf_summary$pval,
+  ci.lb    = tf_summary$ci.lb,
+  ci.ub    = tf_summary$ci.ub
+)
+
+# Round and format nicely
+tf_model_stats <- round(tf_model_stats, 3)
+
+# Display with kable (same style as the reduced model)
+kable(tf_model_stats, caption = "Trim and Fill Model Effect") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+**Attention Domain**
+```{r}
+attention_data <- cog_ability_filt %>%
+  filter(measure %in% c("attention/response inhibition (score)")
+         )
+
+
+# Compute SMD (Hedges' g) and variance
+attention_meta_red <-rma(m1i = Mean.2,
+               m2i = Mean.1,
+               sd1i = SD.2,
+               sd2i = SD.1,
+               n1i = N.2,
+               n2i = N.1,
+               measure = "SMDH",
+               data = attention_data,
+               method = "REML")
+
+# Extract the main coefficient table (as a data frame)
+model_tbl <- as.data.frame(summary(attention_meta_red)$beta)
+colnames(model_tbl) <- "Estimate"
+
+# Combine with SE, zval, pval, ci.lb, ci.ub
+model_stats <- data.frame(
+  Estimate = summary(attention_meta_red)$beta,
+  SE       = summary(attention_meta_red)$se,
+  zval     = summary(attention_meta_red)$zval,
+  pval     = summary(attention_meta_red)$pval,
+  ci.lb    = summary(attention_meta_red)$ci.lb,
+  ci.ub    = summary(attention_meta_red)$ci.ub
+)
+
+# Round and format nicely
+model_stats <- round(model_stats, 3)
+
+# Display with kable
+kable(model_stats, caption = "Reduced Model Main Effect") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+
+
+# Compute SMD (Hedges' g) and variance
+model_data <- escalc(measure = "SMDH", 
+                  m1i = Mean.2, sd1i = SD.2, n1i = N.2, 
+                  m2i = Mean.1, sd2i = SD.1, n2i = N.1,
+                  slab = paste(study),
+                  data = attention_data,
+                  var.names = c("SMDH", "SMDH_var"))
+
+attention_meta_full <- rma.mv(SMDH, SMDH_var,
+              mods = ~ Severity + log_duration + T.2 + Age,
+              random = ~ 1 | study,
+              data = model_data,
+              method = "REML")
+
+# Get the model summary
+summary_full <- summary(attention_meta_full)
+
+# Extract moderator info
+mod_results <- data.frame(
+  Estimate = summary_full$beta[,1],
+  SE = summary_full$se,
+  zval = summary_full$zval,
+  pval = summary_full$pval,
+  CI_Lower = summary_full$ci.lb,
+  CI_Upper = summary_full$ci.ub
+)
+
+rownames(mod_results) <- gsub("log_duration", "Duration ", rownames(mod_results))
+rownames(mod_results) <- gsub("T.2", "Type: ", rownames(mod_results))
+
+# Round for presentation
+mod_results <- mod_results %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+# Show as table
+kable(mod_results, caption = "Full Model Moderator Effects") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+
+funnel(attention_meta_red)
+
+#Corrected trimfill model
+tf_model <- trimfill(attention_meta_red)
+tf_summary <- summary(tf_model)
+
+# Extract the main coefficient table (as a data frame)
+tf_model_tbl <- as.data.frame(tf_summary$beta)
+colnames(tf_model_tbl) <- "Estimate"
+
+# Combine with SE, zval, pval, ci.lb, ci.ub
+tf_model_stats <- data.frame(
+  Estimate = tf_summary$beta,
+  SE       = tf_summary$se,
+  zval     = tf_summary$zval,
+  pval     = tf_summary$pval,
+  ci.lb    = tf_summary$ci.lb,
+  ci.ub    = tf_summary$ci.ub
+)
+
+# Round and format nicely
+tf_model_stats <- round(tf_model_stats, 3)
+
+# Display with kable (same style as the reduced model)
+kable(tf_model_stats, caption = "Trim and Fill Model Effect") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+**Executive Function Domain**
+```{r}
+executive_data <- cog_ability_filt%>%
+  filter(measure %in% c("executive function (score)", "verbal fluency (score)", "non-verbal fluency (score)", "tower task (score)", "cognitive flexibility (score)", "coding (score)", "decision-making (score)", "visual acuity (score)", "reasoning (score)", "risk-taking (score)", "addition (score)", "incorrect answers (score)", "neurocognitive index (score)", "pattern recognition (score)", "number comparison (score)", "proof-reading (score)", "spatial tracking (score)", "map compass (score)" ))
+
+
+# Compute SMD (Hedges' g) and variance
+executive_meta_red <-rma(m1i = Mean.2,
+               m2i = Mean.1,
+               sd1i = SD.2,
+               sd2i = SD.1,
+               n1i = N.2,
+               n2i = N.1,
+               measure = "SMDH",
+               data = executive_data,
+               method = "REML")
+
+# Extract the main coefficient table (as a data frame)
+model_tbl <- as.data.frame(summary(executive_meta_red)$beta)
+colnames(model_tbl) <- "Estimate"
+
+# Combine with SE, zval, pval, ci.lb, ci.ub
+model_stats <- data.frame(
+  Estimate = summary(executive_meta_red)$beta,
+  SE       = summary(executive_meta_red)$se,
+  zval     = summary(executive_meta_red)$zval,
+  pval     = summary(executive_meta_red)$pval,
+  ci.lb    = summary(executive_meta_red)$ci.lb,
+  ci.ub    = summary(executive_meta_red)$ci.ub
+)
+
+# Round and format nicely
+model_stats <- round(model_stats, 3)
+
+# Display with kable
+#kable(model_stats, caption = "Reduced Model Main Effect") %>%
+  #kable_styling(latex_options = c("striped", "hold_position"))
+
+
+# Compute SMD (Hedges' g) and variance
+model_data <- escalc(measure = "SMDH", 
+                  m1i = Mean.2, sd1i = SD.2, n1i = N.2, 
+                  m2i = Mean.1, sd2i = SD.1, n2i = N.1,
+                  slab = paste(study),
+                  data = executive_data,
+                  var.names = c("SMDH", "SMDH_var"))
+
+executive_meta_full <- rma.mv(SMDH, SMDH_var,
+              mods = ~ Severity + log_duration + T.2 + Age + measure,
+              random = ~ 1 | study,
+              data = model_data,
+              method = "REML")
+
+# Get the model summary
+summary_full <- summary(executive_meta_full)
+
+# Extract moderator info
+mod_results <- data.frame(
+  Estimate = summary_full$beta[,1],
+  SE = summary_full$se,
+  zval = summary_full$zval,
+  pval = summary_full$pval,
+  CI_Lower = summary_full$ci.lb,
+  CI_Upper = summary_full$ci.ub
+)
+
+rownames(mod_results) <- gsub("log_duration", "Duration ", rownames(mod_results))
+rownames(mod_results) <- gsub("measure", "Measure: ", rownames(mod_results))
+rownames(mod_results) <- gsub("T.2", "Type: ", rownames(mod_results))
+
+# Round for presentation
+mod_results <- mod_results %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+# Show as table
+#kable(mod_results, caption = "Full Model Moderator Effects") %>%
+  #kable_styling(latex_options = c("striped", "hold_position"))
+
+funnel(executive_meta_red)
+
+#Corrected trimfill model
+tf_model <- trimfill(executive_meta_red)
+tf_summary <- summary(tf_model)
+
+# Extract the main coefficient table (as a data frame)
+tf_model_tbl <- as.data.frame(tf_summary$beta)
+colnames(tf_model_tbl) <- "Estimate"
+
+# Combine with SE, zval, pval, ci.lb, ci.ub
+tf_model_stats <- data.frame(
+  Estimate = tf_summary$beta,
+  SE       = tf_summary$se,
+  zval     = tf_summary$zval,
+  pval     = tf_summary$pval,
+  ci.lb    = tf_summary$ci.lb,
+  ci.ub    = tf_summary$ci.ub
+)
+
+# Round and format nicely
+tf_model_stats <- round(tf_model_stats, 3)
+
+# Display with kable (same style as the reduced model)
+#kable(tf_model_stats, caption = "Trim and Fill Model Effect") %>%
+  #kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+**Processing Speed Domain**
+```{r}
+process_data <- cog_ability_filt %>%
+  filter(measure %in% c("processing speed (milliseconds)"))
+
+
+# Compute SMD (Hedges' g) and variance
+process_meta_red <-rma(m1i = Mean.2,
+               m2i = Mean.1,
+               sd1i = SD.2,
+               sd2i = SD.1,
+               n1i = N.2,
+               n2i = N.1,
+               measure = "SMDH",
+               data = process_data,
+               method = "REML")
+
+# Extract the main coefficient table (as a data frame)
+model_tbl <- as.data.frame(summary(process_meta_red)$beta)
+colnames(model_tbl) <- "Estimate"
+
+# Combine with SE, zval, pval, ci.lb, ci.ub
+model_stats <- data.frame(
+  Estimate = summary(process_meta_red)$beta,
+  SE       = summary(process_meta_red)$se,
+  zval     = summary(process_meta_red)$zval,
+  pval     = summary(process_meta_red)$pval,
+  ci.lb    = summary(process_meta_red)$ci.lb,
+  ci.ub    = summary(process_meta_red)$ci.ub
+)
+
+# Round and format nicely
+model_stats <- round(model_stats, 3)
+
+# Display with kable
+kable(model_stats, caption = "Reduced Model Main Effect") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+
+
+# Compute SMD (Hedges' g) and variance
+model_data <- escalc(measure = "SMDH", 
+                  m1i = Mean.2, sd1i = SD.2, n1i = N.2, 
+                  m2i = Mean.1, sd2i = SD.1, n2i = N.1,
+                  slab = paste(study),
+                  data = process_data,
+                  var.names = c("SMDH", "SMDH_var"))
+
+process_meta_full <- rma.mv(SMDH, SMDH_var,
+              mods = ~ Severity + log_duration + T.2 + Age,
+              random = ~ 1 | study,
+              data = model_data,
+              method = "REML")
+
+# Get the model summary
+summary_full <- summary(process_meta_full)
+
+# Extract moderator info
+mod_results <- data.frame(
+  Estimate = summary_full$beta[,1],
+  SE = summary_full$se,
+  zval = summary_full$zval,
+  pval = summary_full$pval,
+  CI_Lower = summary_full$ci.lb,
+  CI_Upper = summary_full$ci.ub
+)
+
+rownames(mod_results) <- gsub("log_duration", "Duration ", rownames(mod_results))
+rownames(mod_results) <- gsub("T.2", "Type: ", rownames(mod_results))
+
+# Round for presentation
+mod_results <- mod_results %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+# Show as table
+kable(mod_results, caption = "Full Model Moderator Effects") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+
+funnel(process_meta_red)
+
+#Corrected trimfill model
+tf_model <- trimfill(process_meta_red)
+tf_summary <- summary(tf_model)
+
+# Extract the main coefficient table (as a data frame)
+tf_model_tbl <- as.data.frame(tf_summary$beta)
+colnames(tf_model_tbl) <- "Estimate"
+
+# Combine with SE, zval, pval, ci.lb, ci.ub
+tf_model_stats <- data.frame(
+  Estimate = tf_summary$beta,
+  SE       = tf_summary$se,
+  zval     = tf_summary$zval,
+  pval     = tf_summary$pval,
+  ci.lb    = tf_summary$ci.lb,
+  ci.ub    = tf_summary$ci.ub
+)
+
+# Round and format nicely
+tf_model_stats <- round(tf_model_stats, 3)
+
+# Display with kable (same style as the reduced model)
+kable(tf_model_stats, caption = "Trim and Fill Model Effect") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+
+```
+
+**Psychomotor Speed Domain**
+```{r}
+psycho_data <- cog_ability_filt %>%
+  filter(measure %in% c("psychomotor speed (score)", "motor speed (score)", "accuracy (score)", "fine-motor control (score"))
+
+
+# Compute SMD (Hedges' g) and variance
+psycho_meta_red <-rma(m1i = Mean.2,
+               m2i = Mean.1,
+               sd1i = SD.2,
+               sd2i = SD.1,
+               n1i = N.2,
+               n2i = N.1,
+               measure = "SMDH",
+               data = psycho_data,
+               method = "REML")
+
+# Extract the main coefficient table (as a data frame)
+model_tbl <- as.data.frame(summary(psycho_meta_red)$beta)
+colnames(model_tbl) <- "Estimate"
+
+# Combine with SE, zval, pval, ci.lb, ci.ub
+model_stats <- data.frame(
+  Estimate = summary(psycho_meta_red)$beta,
+  SE       = summary(psycho_meta_red)$se,
+  zval     = summary(psycho_meta_red)$zval,
+  pval     = summary(psycho_meta_red)$pval,
+  ci.lb    = summary(psycho_meta_red)$ci.lb,
+  ci.ub    = summary(psycho_meta_red)$ci.ub
+)
+
+# Round and format nicely
+model_stats <- round(model_stats, 3)
+
+# Display with kable
+kable(model_stats, caption = "Reduced Model Main Effect") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+
+
+# Compute SMD (Hedges' g) and variance
+model_data <- escalc(measure = "SMDH", 
+                  m1i = Mean.2, sd1i = SD.2, n1i = N.2, 
+                  m2i = Mean.1, sd2i = SD.1, n2i = N.1,
+                  slab = paste(study),
+                  data = psycho_data,
+                  var.names = c("SMDH", "SMDH_var"))
+
+psycho_meta_full <- rma.mv(SMDH, SMDH_var,
+              mods = ~ Severity + log_duration + T.2 + Age + measure,
+              random = ~ 1 | study,
+              data = model_data,
+              method = "REML")
+
+# Get the model summary
+summary_full <- summary(psycho_meta_full)
+
+# Extract moderator info
+mod_results <- data.frame(
+  Estimate = summary_full$beta[,1],
+  SE = summary_full$se,
+  zval = summary_full$zval,
+  pval = summary_full$pval,
+  CI_Lower = summary_full$ci.lb,
+  CI_Upper = summary_full$ci.ub
+)
+
+rownames(mod_results) <- gsub("log_duration", "Duration ", rownames(mod_results))
+rownames(mod_results) <- gsub("measure", "Measure: ", rownames(mod_results))
+rownames(mod_results) <- gsub("T.2", "Type: ", rownames(mod_results))
+
+# Round for presentation
+mod_results <- mod_results %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+# Show as table
+kable(mod_results, caption = "Full Model Moderator Effects") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+
+funnel(psycho_meta_red)
+
+#Corrected trimfill model
+tf_model <- trimfill(psycho_meta_red)
+tf_summary <- summary(tf_model)
+
+# Extract the main coefficient table (as a data frame)
+tf_model_tbl <- as.data.frame(tf_summary$beta)
+colnames(tf_model_tbl) <- "Estimate"
+
+# Combine with SE, zval, pval, ci.lb, ci.ub
+tf_model_stats <- data.frame(
+  Estimate = tf_summary$beta,
+  SE       = tf_summary$se,
+  zval     = tf_summary$zval,
+  pval     = tf_summary$pval,
+  ci.lb    = tf_summary$ci.lb,
+  ci.ub    = tf_summary$ci.ub
+)
+
+# Round and format nicely
+tf_model_stats <- round(tf_model_stats, 3)
+
+# Display with kable (same style as the reduced model)
+kable(tf_model_stats, caption = "Trim and Fill Model Effect") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```

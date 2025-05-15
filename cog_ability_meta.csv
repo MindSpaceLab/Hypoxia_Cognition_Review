@@ -1,0 +1,153 @@
+study,measure,domain,T.1,N.1,Mean.1,SD.1,T.2,N.2,Mean.2,SD.2,Severity,Duration,Age
+"Ramirez-delaCruz et al., 2025",attention/response inhibition (score),attention,normoxia,26,47,3,normobaric hypoxia,26,25,21,0.11,45,23
+"Ramirez-delaCruz et al., 2025",attention/response inhibition (score),attention,normoxia,26,47,3,normobaric hypoxia,26,32,25,0.13,45,23
+"Ramirez-delaCruz et al., 2025",attention/response inhibition (score),attention,normoxia,26,47,3,normobaric hypoxia,26,38,31,0.15,45,23
+"Asmaro et al., 2013",attention/response inhibition (score),attention,normoxia,35,22.17,6.02,hypobaric hypoxia,35,16.52,7.89,0.105,30,45
+"Davis et al., 2015",attention/response inhibition (score),attention,normoxia,31,10,1,hypobaric hypoxia,78,10,1,0.143,1440,40
+"Davis et al., 2015",attention/response inhibition (score),attention,normoxia,31,10,1,hypobaric hypoxia,23,8,2,0.12,1440,40
+"Falla et al., 2024a",attention/response inhibition (score),attention,normoxia,48,0.85,0.12,hypobaric hypoxia,48,0.85,0.12,0.112,5,40
+"Falla et al., 2024b",attention/response inhibition (score),attention,normoxia,36,0.9,0.1,hypobaric hypoxia,36,0.9,0.1,0.125,30,36
+"Hill et al., 2014",attention/response inhibition (score),attention,normoxia,20,85,2,hypobaric hypoxia,20,86,2,0.132,17344800,33
+"Hohenaur et al., 2022",attention/response inhibition (score),attention,normoxia,20,65.9,22.1,hypobaric hypoxia,20,57.8,22.1,0.143,1440,30
+"Latshang et al., 2013",attention/response inhibition (score),attention,normoxia,12,1,4,hypobaric hypoxia,12,1,3,0.153,2160,24
+"Latshang et al., 2013",attention/response inhibition (score),attention,normoxia,12,0.3,0.18,hypobaric hypoxia,12,0.26,0.15,0.153,2160,24
+"Wu et al., 2023",attention/response inhibition (score),attention,normoxia,41,42.98,18.56,hypobaric hypoxia,41,62.45,19.06,0.132,8640,23
+"Schega et al., 2013",attention/response inhibition (score),attention,normoxia,17,75.16,13.32,intermittent hypoxia,17,82.01,15.53,0.13,60,63
+"Schega et al., 2016",attention/response inhibition (score),attention,normoxia,18,34.2,6.3,intermittent hypoxia,18,32.4,4.9,0.13,90,65
+"Schega et al., 2016",attention/response inhibition (score),attention,normoxia,18,77,16.2,intermittent hypoxia,18,68.3,8,0.13,90,65
+"Ando et al., 2023",attention/response inhibition (score),attention,normoxia,12,100,0.96,normobaric hypoxia,12,98.3,2.44,0.12,360,23
+"Bloomfield et al., 2023",attention/response inhibition (score),attention,normoxia,12,98.6,10.3,normobaric hypoxia,12,97.1,11.2,0.105,40,26
+"Hohenaur et al., 2022",attention/response inhibition (score),attention,normoxia,20,65.9,22.1,normobaric hypoxia,20,66.7,21.4,0.143,15,30
+"Legg et al., 2016",attention/response inhibition (score),attention,normoxia,36,1.27,0.23,normobaric hypoxia,36,1.33,0.32,0.154,40,30
+"Legg et al., 2016",attention/response inhibition (score),attention,normoxia,36,44.4,13.6,normobaric hypoxia,36,43.3,12.6,0.154,40,30
+"Legg et al., 2016",attention/response inhibition (score),attention,normoxia,36,1.27,0.23,normobaric hypoxia,36,1.38,0.24,0.132,40,30
+"Legg et al., 2016",attention/response inhibition (score),attention,normoxia,36,44.4,13.6,normobaric hypoxia,36,43.7,12.5,0.132,40,30
+"Ramirez-delaCruz et al., 2025",attention/response inhibition (score),attention,normoxia,26,396,39,normobaric hypoxia,26,372,36,0.11,45,23
+"Ramirez-delaCruz et al., 2025",attention/response inhibition (score),attention,normoxia,26,502,73,normobaric hypoxia,26,480,48,0.11,45,23
+"Thomas et al., 2007",attention/response inhibition (score),attention,normoxia,11,256,45,normobaric hypoxia,11,259,33,0.127,540,27
+"Turner et al., 2015b",attention/response inhibition (score),attention,normoxia,15,118.8,18.5,normobaric hypoxia,15,112,22.9,0.1,90,31
+"Bloomfield et al., 2023",attention/response inhibition (score),attention,normoxia,12,102.2,7.4,normobaric hypoxia,12,83.4,14.7,0.105,40,26
+"Turner et al., 2015b",attention/response inhibition (score),attention,normoxia,15,93.7,16.8,normobaric hypoxia,15,70.7,51.5,0.1,90,31
+"Aebi et al., 2020",attention/response inhibition (score),attention,normoxia,16,20.9,5.8,normobaric hypoxia,16,19.7,4.2,0.103,30,26
+"Bloomfield et al., 2023",attention/response inhibition (score),attention,normoxia,12,98.6,10.3,normobaric hypoxia,12,97.9,10.2,0.105,40,26
+"Shukitt-Hale et al., 1998",addition (score),executive function,normoxia,23,11.47,0.61,hypobaric hypoxia,23,10.06,0.74,0.115,270,22
+"Shukitt-Hale et al., 1998",addition (score),executive function,normoxia,23,11.47,0.61,hypobaric hypoxia,23,10.64,0.62,0.123,270,22
+"Shukitt-Hale et al., 1998",coding (score),executive function,normoxia,23,43.65,1.84,hypobaric hypoxia,23,39.18,2.11,0.115,270,22
+"Shukitt-Hale et al., 1998",coding (score),executive function,normoxia,23,43.65,1.84,hypobaric hypoxia,23,41.5,1.84,0.123,270,22
+"Hohenaur et al., 2022",cognitive flexibility (score),executive function,normoxia,20,39.5,11.7,hypobaric hypoxia,20,39.7,10.9,0.143,1440,30
+"Bloomfield et al., 2023",cognitive flexibility (score),executive function,normoxia,12,110.9,11.9,normobaric hypoxia,12,94.6,21.4,0.105,40,26
+"Hohenaur et al., 2022",cognitive flexibility (score),executive function,normoxia,20,39.5,11.7,normobaric hypoxia,20,39.7,10.1,0.143,15,30
+"Legg et al., 2016",cognitive flexibility (score),executive function,normoxia,36,8.87,1.25,normobaric hypoxia,36,8.86,1.13,0.154,40,30
+"Legg et al., 2016",cognitive flexibility (score),executive function,normoxia,36,8.87,1.25,normobaric hypoxia,36,8.46,0.79,0.132,40,30
+"Turner et al., 2015a",cognitive flexibility (score),executive function,normoxia,22,109,13.2,normobaric hypoxia,22,102.6,15.1,0.105,50,23
+"Turner et al., 2015b",cognitive flexibility (score),executive function,normoxia,15,98.8,18.2,normobaric hypoxia,15,88.9,31.7,0.1,90,31
+"Niedermeier et al., 2017",decision-making (score),executive function,normoxia,42,2.69,2.25,normobaric hypoxia,42,1.5,1.6,0.126,720,24
+"Asmaro et al., 2013",executive function (score),executive function,normoxia,35,66.4,39.24,hypobaric hypoxia,35,25.72,7.08,0.105,30,45
+"Asmaro et al., 2013",executive function (score),executive function,normoxia,35,102.07,30.91,hypobaric hypoxia,35,53.12,17.45,0.081,30,45
+"Keeler et al., 2023",executive function (score),executive function,normoxia,21,32,10,hypobaric hypoxia,21,28,12,0.14,60,27
+"Keeler et al., 2023",executive function (score),executive function,normoxia,21,32,10,hypobaric hypoxia,21,33,15,0.14,90,27
+"Bloomfield et al., 2023",executive function (score),executive function,normoxia,12,112,12,normobaric hypoxia,12,97.3,21.1,0.105,40,26
+"Turner et al., 2015a",executive function (score),executive function,normoxia,22,107.8,14.4,normobaric hypoxia,22,100.4,18.3,0.105,50,23
+"Aebi et al., 2020",incorrect answers (score),executive function,normoxia,16,1.4,0.9,normobaric hypoxia,16,2.7,1.8,0.103,30,26
+"Shukitt-Hale et al., 1998",map compass (score),executive function,normoxia,23,4.47,0.47,hypobaric hypoxia,23,4.97,0.58,0.115,270,22
+"Shukitt-Hale et al., 1998",map compass (score),executive function,normoxia,23,4.47,0.47,hypobaric hypoxia,23,4.31,0.41,0.123,270,22
+"Bloomfield et al., 2023",neurocognitive index (score),executive function,normoxia,12,101.2,7.5,normobaric hypoxia,12,88.9,9.2,0.105,40,26
+"Merz et al., 2013",non-verbal fluency (score),executive function,normoxia,32,132.1,32.8,hypobaric hypoxia,32,96.9,40.2,0.112,1440,43
+"Shukitt-Hale et al., 1998",number comparison (score),executive function,normoxia,23,21.52,1.06,hypobaric hypoxia,23,18.21,1.3,0.115,270,22
+"Shukitt-Hale et al., 1998",number comparison (score),executive function,normoxia,23,21.52,1.06,hypobaric hypoxia,23,19.27,1.15,0.123,270,22
+"Shukitt-Hale et al., 1998",pattern recognition (score),executive function,normoxia,23,15.17,0.67,hypobaric hypoxia,23,14.28,0.86,0.115,270,22
+"Shukitt-Hale et al., 1998",pattern recognition (score),executive function,normoxia,23,15.17,0.67,hypobaric hypoxia,23,14.21,0.61,0.123,270,22
+"Bakharev et al., 1981",proof-reading (score),executive function,normoxia,7,141,23,hypobaric hypoxia,7,126,19,0.132,2880,25
+"Hohenaur et al., 2022",reasoning (score),executive function,normoxia,20,36.7,14.8,hypobaric hypoxia,20,32.3,12.5,0.143,1440,30
+"Hohenaur et al., 2022",reasoning (score),executive function,normoxia,20,36.7,14.8,normobaric hypoxia,20,34.4,13.5,0.143,15,30
+"Legg et al., 2016",reasoning (score),executive function,normoxia,36,33.7,10.3,normobaric hypoxia,36,34.5,8.7,0.154,40,30
+"Legg et al., 2016",reasoning (score),executive function,normoxia,36,33.7,10.3,normobaric hypoxia,36,34.2,10,0.132,40,30
+"Falla et al., 2024a",risk-taking (score),executive function,normoxia,48,9.26,1.22,hypobaric hypoxia,48,9.13,1.27,0.112,5,40
+"Pighin et al., 2014",risk-taking (score),executive function,normoxia,26,7.2,1.3,normobaric hypoxia,26,6.8,1.8,0.141,60,23
+"Keeler et al., 2023",spatial tracking (score),executive function,normoxia,21,46,20,hypobaric hypoxia,21,47,19,0.14,60,27
+"Keeler et al., 2023",spatial tracking (score),executive function,normoxia,21,46,20,hypobaric hypoxia,21,45,20,0.14,90,27
+"Shukitt-Hale et al., 1998",tower task (score),executive function,normoxia,23,7.07,0.47,hypobaric hypoxia,23,6.37,0.56,0.115,270,22
+"Shukitt-Hale et al., 1998",tower task (score),executive function,normoxia,23,7.07,0.47,hypobaric hypoxia,23,6.71,0.51,0.123,270,22
+"Davis et al., 2015",verbal fluency (score),executive function,normoxia,31,19,6,hypobaric hypoxia,78,19.5,5,0.143,1440,40
+"Davis et al., 2015",verbal fluency (score),executive function,normoxia,31,19,6,hypobaric hypoxia,23,18,6,0.12,1440,40
+"Merz et al., 2013",verbal fluency (score),executive function,normoxia,32,66.1,16.9,hypobaric hypoxia,32,52.7,22.1,0.112,1440,43
+"Schlaepfer et al., 1992",visual acuity (score),executive function,normoxia,10,12,3.7,hypobaric hypoxia,10,8.1,1.5,0.135,10,23
+"Schlaepfer et al., 1992",visual acuity (score),executive function,normoxia,10,11.8,1.9,hypobaric hypoxia,10,8.1,1.1,0.145,15,23
+"Bakharev et al., 1981",associative memory (score),memory,normoxia,7,2.3,0.5,hypobaric hypoxia,7,2.6,0.7,0.132,2880,25
+"Turner et al., 2015a",attention/response inhibition (score),memory,normoxia,22,128.5,24.4,normobaric hypoxia,22,119.2,23.5,0.105,50,23
+"Turner et al., 2015a",attention/response inhibition (score),memory,normoxia,22,103.5,8.4,normobaric hypoxia,22,99.2,10.9,0.105,50,23
+"Hill et al., 2014",episodic memory (score),memory,normoxia,20,220,10,hypobaric hypoxia,20,190,20,0.132,17344800,33
+"Bakharev et al., 1981",involuntary memory (score),memory,normoxia,7,1,0.4,hypobaric hypoxia,7,0.8,0.6,0.132,2880,25
+"Bailey et al., 2019",learning and memory (score),memory,lowlander,17,48,8,higlanders,23,34,9,0.132,28908000,56
+"Bakharev et al., 1981",long-term memory (score),memory,normoxia,7,2.8,0.2,hypobaric hypoxia,7,2.9,0.3,0.132,2880,25
+"Bakharev et al., 1981",operative memory (score),memory,normoxia,7,11.5,0.5,hypobaric hypoxia,7,9.5,1,0.132,2880,25
+"Bakharev et al., 1981",short-term memory (score),memory,normoxia,7,4.8,0.2,hypobaric hypoxia,7,4.3,0.3,0.132,2880,25
+"Bonnon et al., 1999",short-term memory (score),memory,normoxia,7,3.6,1.7,hypobaric hypoxia,7,3.57,3.1,0.105,1440,30
+"Bloomfield et al., 2023",verbal memory (score),memory,normoxia,12,87.1,25.5,normobaric hypoxia,12,77.9,18.8,0.105,40,26
+"Bloomfield et al., 2023",visual memory (score),memory,normoxia,12,96.8,19.2,normobaric hypoxia,12,76.8,7.7,0.105,40,26
+"Bailey et al., 2019",working memory (score),memory,lowlander,17,6,2,higlanders,23,4,1,0.132,28908000,56
+"Asmaro et al., 2013",working memory (score),memory,normoxia,35,6.85,0.94,hypobaric hypoxia,35,3.9,2.12,0.105,30,45
+"Asmaro et al., 2013",working memory (score),memory,normoxia,35,6.06,1.39,hypobaric hypoxia,35,3.61,1.28,0.081,30,45
+"Falla et al., 2024b",working memory (score),memory,normoxia,36,21.2,2.5,hypobaric hypoxia,36,21.7,3.1,0.125,30,36
+"Falla et al., 2024b",working memory (score),memory,normoxia,36,21.7,2.2,hypobaric hypoxia,36,22,2.6,0.125,30,36
+"Hill et al., 2014",working memory (score),memory,normoxia,20,180,20,hypobaric hypoxia,20,175,17,0.132,17344800,33
+"Hohenaur et al., 2022",working memory (score),memory,normoxia,20,156.6,17.3,hypobaric hypoxia,20,156.7,11.6,0.143,1440,30
+"Hohenaur et al., 2022",working memory (score),memory,normoxia,20,111.4,31.5,hypobaric hypoxia,20,100.8,32.5,0.143,1440,30
+"Hohenaur et al., 2022",working memory (score),memory,normoxia,20,60.4,24.5,hypobaric hypoxia,20,59.9,34.4,0.143,1440,30
+"Hohenaur et al., 2022",working memory (score),memory,normoxia,20,53.9,31.8,hypobaric hypoxia,20,48.1,28.3,0.143,1440,30
+"Keeler et al., 2023",working memory (score),memory,normoxia,21,5,8,hypobaric hypoxia,21,7,5,0.14,60,27
+"Keeler et al., 2023",working memory (score),memory,normoxia,21,8,7.5,hypobaric hypoxia,21,5.5,10,0.14,90,27
+"Latshang et al., 2013",working memory (score),memory,normoxia,12,92,6,hypobaric hypoxia,12,93,5,0.153,2160,24
+"Malle et al., 2013",working memory (score),memory,normoxia,29,95.4,0.9,hypobaric hypoxia,57,69.7,2.6,0.06,60,24
+"Wu et al., 2023",working memory (score),memory,normoxia,41,9,2,hypobaric hypoxia,41,10,3,0.132,8640,23
+"Champod et al., 2013",working memory (score),memory,normoxia,17,12.4,3,intermittent hypoxia,17,14.2,2.9,0.1125,360,30
+"Champod et al., 2013",working memory (score),memory,normoxia,17,9,0.28,intermittent hypoxia,17,9.6,1.6,0.1125,360,30
+"Hohenaur et al., 2022",working memory (score),memory,normoxia,20,156.6,17.3,normobaric hypoxia,20,152.8,12.2,0.143,15,30
+"Hohenaur et al., 2022",working memory (score),memory,normoxia,20,111.4,31.5,normobaric hypoxia,20,114.2,33.9,0.143,15,30
+"Hohenaur et al., 2022",working memory (score),memory,normoxia,20,60.4,24.5,normobaric hypoxia,20,63.5,28.9,0.143,15,30
+"Hohenaur et al., 2022",working memory (score),memory,normoxia,20,53.9,31.8,normobaric hypoxia,20,53.5,24.3,0.143,15,30
+"Legg et al., 2016",working memory (score),memory,normoxia,36,72.8,17.5,normobaric hypoxia,36,73.7,15.4,0.154,40,30
+"Legg et al., 2016",working memory (score),memory,normoxia,36,28.4,7.2,normobaric hypoxia,36,27,7.8,0.154,40,30
+"Legg et al., 2016",working memory (score),memory,normoxia,36,72.8,17.5,normobaric hypoxia,36,71.1,14.8,0.132,40,30
+"Legg et al., 2016",working memory (score),memory,normoxia,36,28.4,7.2,normobaric hypoxia,36,27.9,8,0.132,40,30
+"Noble et al., 1993",working memory (score),memory,normoxia,12,8.63,2,normobaric hypoxia,12,7.58,3,0.13,30,31
+"Parker et al., 2017",working memory (score),memory,normoxia,10,19,8,normobaric hypoxia,10,19,5,0.141,45,30
+"Ramirez-delaCruz et al., 2025",working memory (score),memory,normoxia,26,11.7,4.2,normobaric hypoxia,26,11.3,3.3,0.11,45,23
+"Ramirez-delaCruz et al., 2025",working memory (score),memory,normoxia,26,11.7,4.2,normobaric hypoxia,26,12.7,3.3,0.13,45,23
+"Ramirez-delaCruz et al., 2025",working memory (score),memory,normoxia,26,11.7,4.2,normobaric hypoxia,26,11.6,4.1,0.15,45,23
+"Thomas et al., 2007",working memory (score),memory,normoxia,11,92.4,2.2,normobaric hypoxia,11,94.1,3.2,0.127,540,27
+"Turner et al., 2015a",working memory (score),memory,normoxia,22,105.4,11.4,normobaric hypoxia,22,79.9,22.3,0.105,50,23
+"Turner et al., 2015a",working memory (score),memory,normoxia,22,106.5,8.9,normobaric hypoxia,22,84.4,27.8,0.105,50,23
+"Turner et al., 2015a",working memory (score),memory,normoxia,22,103.4,14.9,normobaric hypoxia,22,79.6,20.2,0.105,50,23
+"Turner et al., 2015b",working memory (score),memory,normoxia,15,106,13.1,normobaric hypoxia,15,96.1,16.7,0.1,90,31
+"Turner et al., 2015b",working memory (score),memory,normoxia,15,106,13.1,normobaric hypoxia,15,96.1,16.7,0.1,90,31
+"Bailey et al., 2019",processing speed (milliseconds),processing speed,lowlander,17,41,18,higlanders,23,37,15,0.132,28908000,56
+"Falla et al., 2024a",processing speed (milliseconds),processing speed,normoxia,48,285.55,16.61,hypobaric hypoxia,48,289.2,16.94,0.112,5,40
+"Hill et al., 2014",processing speed (milliseconds),processing speed,normoxia,20,128,12,hypobaric hypoxia,20,125,15,0.132,17344800,33
+"Hohenaur et al., 2022",processing speed (milliseconds),processing speed,normoxia,20,156.7,11.6,hypobaric hypoxia,20,156.6,17.3,0.143,1440,30
+"Latshang et al., 2013",processing speed (milliseconds),processing speed,normoxia,12,51.2,13,hypobaric hypoxia,12,52.4,13,0.153,2160,24
+"Wu et al., 2023",processing speed (milliseconds),processing speed,normoxia,41,670,140,hypobaric hypoxia,41,620,100,0.132,8640,23
+"Wu et al., 2023",processing speed (milliseconds),processing speed,normoxia,41,710,180,hypobaric hypoxia,41,600,110,0.132,8640,23
+"Yan et al., 2011a",processing speed (milliseconds),processing speed,normoxia,28,665.76,89.39,hypobaric hypoxia,28,617.38,81.88,0.143,10512000,20
+"Yan et al., 2011b",processing speed (milliseconds),processing speed,normoxia,28,658.84,92.1,hypobaric hypoxia,30,610,63.92,0.143,10512000,20
+"Schega et al., 2013",processing speed (milliseconds),processing speed,normoxia,17,425.29,70.33,intermittent hypoxia,17,418.41,71.86,0.13,60,63
+"Bloomfield et al., 2023",processing speed (milliseconds),processing speed,normoxia,12,98.7,13.5,normobaric hypoxia,12,100.3,13.1,0.105,40,26
+"Bloomfield et al., 2023",processing speed (milliseconds),processing speed,normoxia,12,89.6,11.4,normobaric hypoxia,12,96,15.3,0.105,40,26
+"Hohenaur et al., 2022",processing speed (milliseconds),processing speed,normoxia,20,152.8,12.2,normobaric hypoxia,20,156.6,17.3,0.143,15,30
+"Noble et al., 1993",processing speed (milliseconds),processing speed,normoxia,12,286.93,41.06,normobaric hypoxia,12,232.27,14.7,0.13,30,31
+"Noble et al., 1993",processing speed (milliseconds),processing speed,normoxia,12,52.6,10,normobaric hypoxia,12,27.1,10,0.13,30,31
+"Ramirez-delaCruz et al., 2025",processing speed (milliseconds),processing speed,normoxia,26,396,39,normobaric hypoxia,26,372,36,0.11,45,23
+"Ramirez-delaCruz et al., 2025",processing speed (milliseconds),processing speed,normoxia,26,380,37,normobaric hypoxia,26,372,36,0.13,45,23
+"Turner et al., 2015a",processing speed (milliseconds),processing speed,normoxia,22,133,35.6,normobaric hypoxia,22,141.9,25.6,0.105,50,23
+"Parker et al., 2017",accuracy (score),psychomotor speed,normoxia,10,4.6,2.55,normobaric hypoxia,10,3,1.7,0.141,45,30
+"Parker et al., 2017",fine-motor control (score),psychomotor speed,normoxia,10,16.9,5.04,normobaric hypoxia,10,17.2,4.41,0.141,45,30
+"Bloomfield et al., 2023",motor speed (score),psychomotor speed,normoxia,12,104.1,14.5,normobaric hypoxia,12,99.3,13.4,0.105,40,26
+"Bailey et al., 2019",psychomotor speed (score),psychomotor speed,lowlander,17,73,11,higlanders,23,67,8,0.132,28908000,56
+"Davis et al., 2015",psychomotor speed (score),psychomotor speed,normoxia,31,140,30,hypobaric hypoxia,78,100,25,0.143,1440,40
+"Davis et al., 2015",psychomotor speed (score),psychomotor speed,normoxia,31,140,30,hypobaric hypoxia,23,80,30,0.12,1440,40
+"Falla et al., 2024a",psychomotor speed (score),psychomotor speed,normoxia,48,49.47,6.66,hypobaric hypoxia,48,47.94,7.13,0.112,5,40
+"Falla et al., 2024b",psychomotor speed (score),psychomotor speed,normoxia,36,48.8,6.8,hypobaric hypoxia,36,49.9,5.8,0.125,30,36
+"Falla et al., 2024b",psychomotor speed (score),psychomotor speed,normoxia,36,59,8.5,hypobaric hypoxia,36,56.5,8,0.125,30,36
+"Hill et al., 2014",psychomotor speed (score),psychomotor speed,normoxia,20,70,10,hypobaric hypoxia,20,60,8,0.132,17344800,33
+"Bloomfield et al., 2023",psychomotor speed (score),psychomotor speed,normoxia,12,102.3,14.8,normobaric hypoxia,12,95.7,10.9,0.105,40,26
+"Noble et al., 1993",psychomotor speed (score),psychomotor speed,normoxia,12,70.5,3,normobaric hypoxia,12,66.5,4,0.13,30,31
