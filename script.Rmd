@@ -1,0 +1,3983 @@
+---
+title: 'Neurocognitive Vulnerability During Hypoxia: Differential Effects Across Cognitive
+  Domains'
+author: "Daniel J McKeown"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: false
+    df_print: paged
+  pdf_document:
+    toc: false
+    number_sections: false
+---
+
+This report presents the results of a series of meta-analytic models examining the effects of hypoxia on cognitive performance. For each cognitive domain, two models are presented, as well as a funnel plot and a model accounting for publication bias:
+
+- **Main effect model**: Estimates the overall effect of hypoxia on the cognitive outcome across studies, without accounting for additional predictors.
+- **Moderator model**: Includes study-level moderators (e.g., severity , duration, and type of exposure, cognitive domain/task measure, and participant age) to examine whether these factors explain variability in effect sizes across studies.
+- **Funnel plot**: Funnel plots are also included to visualise the distribution of effect sizes included in each model.
+- **Corrected model**: To control for potentional publication bias, the main effect model was corrected using the trimfill function of the metafor package.
+
+All models were fit using the `metafor` package in R, with standardized mean differences (SMDH) as the effect size metric and random effects specified at the study level.
+
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,     # hides code
+  message = FALSE,
+  warning = FALSE
+)
+library(metafor)
+library(readr)
+library(dplyr)
+library(knitr)
+library(kableExtra)  # for prettier tables
+```
+
+```{r}
+cog_ability <- read_csv("data/cog_ability_meta.csv")
+
+#Filter Malle et al., 2013 due to being an outlier
+cog_ability_filt <- cog_ability[!grepl("Malle et al., 2013", cog_ability$study), ]
+
+# Log transform Duration (adding 1 to avoid log(0))
+cog_ability_filt$log_duration <- log(cog_ability_filt$Duration + 1)
+```
+
+#Categorise variables where needed
+```{r}
+# Prepare moderator variables
+cog_ability_filt$chc_broad <- factor(cog_ability_filt$chc_ability)
+cog_ability_filt$T.2 <- factor(cog_ability_filt$T.2)
+
+# Mean-centre continuous moderators
+cog_ability_filt$Severity_c <- scale(
+  cog_ability_filt$Severity,
+  center = TRUE,
+  scale = FALSE
+)
+
+cog_ability_filt$log_duration_c <- scale(
+  cog_ability_filt$log_duration,
+  center = TRUE,
+  scale = FALSE
+)
+
+cog_ability_filt$Age_c <- scale(
+  cog_ability_filt$Age,
+  center = TRUE,
+  scale = FALSE
+)
+```
+
+```{r}
+cog_ability_filt %>%
+  group_by(chc_code) %>%
+  summarise(
+    k = n(),
+    studies = n_distinct(study),
+    .groups = "drop"
+  ) %>%
+  arrange(chc_code) %>%
+  kable(
+    caption = "Effect Sizes and Studies by CHC Broad Ability"
+  )
+```
+
+
+#Overall cognitive ability
+
+```{r}
+
+# ============================================================
+# OVERALL COGNITIVE ABILITY META-ANALYSIS
+# ============================================================
+
+
+# ============================================================
+# MAIN RANDOM-EFFECTS MODEL
+# ============================================================
+
+cog_meta_red <- rma(
+  yi = yi,
+  vi = vi,
+  data = cog_ability_filt,
+  method = "REML"
+)
+
+
+# ============================================================
+# MAIN EFFECT RESULTS
+# ============================================================
+
+summary_red <- summary(cog_meta_red)
+
+model_stats <- data.frame(
+  Estimate = as.numeric(summary_red$beta),
+  SE = summary_red$se,
+  zval = summary_red$zval,
+  pval = summary_red$pval,
+  CI_Lower = summary_red$ci.lb,
+  CI_Upper = summary_red$ci.ub
+)
+
+rownames(model_stats) <- "Overall Effect"
+
+model_stats <- model_stats %>%
+  mutate(
+    across(
+      where(is.numeric),
+      ~ round(.x, 3)
+    )
+  )
+
+kable(
+  model_stats,
+  caption = "Random-Effects Model: Overall Cognitive Ability"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# HETEROGENEITY STATISTICS
+# ============================================================
+
+heterogeneity_stats <- data.frame(
+  
+  Effect_Sizes = cog_meta_red$k,
+  
+  Tau2 = cog_meta_red$tau2,
+  
+  Tau = sqrt(cog_meta_red$tau2),
+  
+  I2 = cog_meta_red$I2,
+  
+  H2 = cog_meta_red$H2,
+  
+  Q = cog_meta_red$QE,
+  
+  df = cog_meta_red$k - cog_meta_red$p,
+  
+  p_value = cog_meta_red$QEp
+)
+
+heterogeneity_stats <- heterogeneity_stats %>%
+  mutate(
+    across(
+      where(is.numeric),
+      ~ round(.x, 3)
+    )
+  )
+
+kable(
+  heterogeneity_stats,
+  caption = "Heterogeneity Statistics"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# PREDICTION INTERVAL
+# ============================================================
+
+# The prediction interval estimates the expected range of
+# true effects in a future comparable study.
+
+pred_red <- predict(
+  cog_meta_red,
+  level = 95
+)
+
+prediction_interval <- data.frame(
+  
+  Pooled_Effect = pred_red$pred,
+  
+  CI_Lower = pred_red$ci.lb,
+  
+  CI_Upper = pred_red$ci.ub,
+  
+  PI_Lower = pred_red$pi.lb,
+  
+  PI_Upper = pred_red$pi.ub
+)
+
+prediction_interval <- prediction_interval %>%
+  mutate(
+    across(
+      where(is.numeric),
+      ~ round(.x, 3)
+    )
+  )
+
+kable(
+  prediction_interval,
+  caption = "Pooled Effect and 95 Percent Prediction Interval"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# FULL MULTILEVEL MODERATOR MODEL
+# ============================================================
+
+cog_meta_full <- rma.mv(
+  yi,
+  vi,
+  mods = ~ Severity_c +
+    log_duration_c +
+    Age_c +
+    chc_broad +
+    T.2,
+  random = ~ 1 | study,
+  data = cog_ability_filt,
+  method = "REML"
+)
+
+
+# ============================================================
+# EXTRACT MODERATOR MODEL RESULTS
+# ============================================================
+
+summary_full <- summary(cog_meta_full)
+
+mod_results <- data.frame(
+  
+  Term = rownames(summary_full$beta),
+  
+  Estimate = as.numeric(summary_full$beta),
+  
+  SE = summary_full$se,
+  
+  zval = summary_full$zval,
+  
+  pval = summary_full$pval,
+  
+  CI_Lower = summary_full$ci.lb,
+  
+  CI_Upper = summary_full$ci.ub
+)
+
+
+# ============================================================
+# IMPROVE COEFFICIENT LABELS
+# ============================================================
+
+mod_results$Term <- gsub(
+  "intrcpt",
+  "Intercept",
+  mod_results$Term
+)
+
+mod_results$Term <- gsub(
+  "Severity_c",
+  "Hypoxia Severity",
+  mod_results$Term
+)
+
+mod_results$Term <- gsub(
+  "log_duration_c",
+  "Log Duration",
+  mod_results$Term
+)
+
+mod_results$Term <- gsub(
+  "Age_c",
+  "Participant Age",
+  mod_results$Term
+)
+
+mod_results$Term <- gsub(
+  "chc_broad",
+  "Cognitive Ability: ",
+  mod_results$Term
+)
+
+mod_results$Term <- gsub(
+  "T.2",
+  "Hypoxia Type: ",
+  mod_results$Term
+)
+
+
+# ============================================================
+# ROUND MODERATOR RESULTS
+# ============================================================
+
+mod_results <- mod_results %>%
+  mutate(
+    across(
+      where(is.numeric),
+      ~ round(.x, 3)
+    )
+  )
+
+
+# ============================================================
+# DISPLAY MODERATOR RESULTS
+# ============================================================
+
+kable(
+  mod_results,
+  caption = "Multilevel Moderator Model"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# OMNIBUS TEST OF MODERATORS
+# ============================================================
+
+# QM tests whether the included moderators collectively
+# explain a significant amount of variability in effect sizes.
+
+moderator_test <- data.frame(
+  
+  QM = cog_meta_full$QM,
+  
+  df = cog_meta_full$m,
+  
+  p_value = cog_meta_full$QMp
+)
+
+moderator_test <- moderator_test %>%
+  mutate(
+    across(
+      where(is.numeric),
+      ~ round(.x, 3)
+    )
+  )
+
+kable(
+  moderator_test,
+  caption = "Omnibus Test of Moderators"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# RESIDUAL HETEROGENEITY
+# ============================================================
+
+# QE tests whether significant heterogeneity remains after
+# accounting for the included moderators.
+
+residual_heterogeneity <- data.frame(
+  
+  QE = cog_meta_full$QE,
+  
+  df = cog_meta_full$k - cog_meta_full$p,
+  
+  p_value = cog_meta_full$QEp
+)
+
+residual_heterogeneity <- residual_heterogeneity %>%
+  mutate(
+    across(
+      where(is.numeric),
+      ~ round(.x, 3)
+    )
+  )
+
+kable(
+  residual_heterogeneity,
+  caption = "Residual Heterogeneity in the Moderator Model"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# FUNNEL PLOT
+# ============================================================
+
+funnel(
+  cog_meta_red,
+  main = "Funnel Plot: Overall Cognitive Ability"
+)
+
+
+# ============================================================
+# TRIM-AND-FILL MODEL
+# ============================================================
+
+tf_model <- trimfill(
+  cog_meta_red
+)
+
+tf_summary <- summary(
+  tf_model
+)
+
+
+# ============================================================
+# EXTRACT TRIM-AND-FILL RESULTS
+# ============================================================
+
+tf_model_stats <- data.frame(
+  
+  Estimate = as.numeric(tf_summary$beta),
+  
+  SE = tf_summary$se,
+  
+  zval = tf_summary$zval,
+  
+  pval = tf_summary$pval,
+  
+  CI_Lower = tf_summary$ci.lb,
+  
+  CI_Upper = tf_summary$ci.ub
+)
+
+rownames(tf_model_stats) <- "Trim-and-Fill Adjusted Effect"
+
+tf_model_stats <- tf_model_stats %>%
+  mutate(
+    across(
+      where(is.numeric),
+      ~ round(.x, 3)
+    )
+  )
+
+kable(
+  tf_model_stats,
+  caption = "Trim-and-Fill Corrected Model"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# NUMBER OF IMPUTED EFFECT SIZES
+# ============================================================
+
+trimfill_info <- data.frame(
+  
+  Original_Effect_Sizes = cog_meta_red$k,
+  
+  Imputed_Effect_Sizes = tf_model$k0,
+  
+  Total_Effect_Sizes = cog_meta_red$k + tf_model$k0
+)
+
+kable(
+  trimfill_info,
+  caption = "Trim-and-Fill Imputation Results"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+```
+  
+#FIGURE 1#
+```{r}
+# ============================================================
+# FOREST PLOT: GENERAL COGNITIVE ABILITY
+# ============================================================
+
+# Ensure the overall random-effects model exists
+cog_meta_red <- rma(
+  yi = yi,
+  vi = vi,
+  data = cog_ability_filt,
+  method = "REML"
+)
+
+
+# ------------------------------------------------------------
+# Prepare data
+# ------------------------------------------------------------
+
+k <- nrow(cog_ability_filt)
+
+# Split into two approximately equal parts
+half <- ceiling(k / 2)
+
+cog_data_p1 <- cog_ability_filt[1:half, ]
+
+cog_data_p2 <- cog_ability_filt[
+  (half + 1):k,
+]
+
+
+# Create informative labels
+cog_data_p1$label <- paste0(
+  cog_data_p1$study,
+  " (",
+  cog_data_p1$chc_ability,
+  ")"
+)
+
+cog_data_p2$label <- paste0(
+  cog_data_p2$study,
+  " (",
+  cog_data_p2$chc_ability,
+  ")"
+)
+
+
+# ============================================================
+# FUNCTION TO CREATE EACH FOREST PLOT
+# ============================================================
+
+create_forest_plot <- function(data, filename, page_number) {
+
+  k_page <- nrow(data)
+
+  # Give each study a row
+  # Reserve rows 1-3 for the overall effect
+  study_rows <- seq(
+    k_page + 3,
+    4,
+    by = -1
+  )
+
+  pdf(
+    filename,
+    width = 11,
+    height = 14
+  )
+
+  # Plot margins
+  par(
+    mar = c(4, 1, 2, 2)
+  )
+
+  forest(
+
+    # Effect sizes
+    x = data$yi,
+
+    # Sampling variances
+    vi = data$vi,
+
+    # Study labels
+    slab = data$label,
+
+    # Row positions
+    rows = study_rows,
+
+    # Font size
+    cex = 0.65,
+
+    # Overall plotting region
+    # Widened to prevent overlap
+    xlim = c(-5.5, 3.5),
+
+    # Actual effect-size axis range
+    alim = c(-3, 2),
+
+    # Position of study labels and effect size text
+    textpos = c(-5.3, 3.3),
+
+    # Suppress automatic summary polygon
+    addfit = FALSE,
+
+    # X-axis label
+    xlab = "Effect size (Hedges' g)",
+
+    # Consistent axis ticks
+    at = c(-3, -2, -1, 0, 1, 2),
+
+    # Header
+    header = c(
+      paste0(
+        "Study / Cognitive ability (Part ",
+        page_number,
+        ")"
+      ),
+      "Hedges' g [95% CI]"
+    )
+  )
+
+
+  # ----------------------------------------------------------
+  # Add zero reference line
+  # ----------------------------------------------------------
+
+  abline(
+    v = 0,
+    lty = 2
+  )
+
+
+  # ----------------------------------------------------------
+  # Add overall pooled effect
+  # ----------------------------------------------------------
+
+  addpoly(
+    cog_meta_red,
+
+    row = 1,
+
+    mlab = "Overall pooled effect",
+
+    cex = 0.75
+  )
+
+
+  # Add a separator above the pooled effect
+  abline(
+    h = 2.5,
+    lty = 3
+  )
+
+
+  dev.off()
+}
+
+
+# ============================================================
+# CREATE PART 1
+# ============================================================
+
+create_forest_plot(
+  data = cog_data_p1,
+  filename = "Forest_Plot_Cognitive_Ability_Part1.pdf",
+  page_number = 1
+)
+
+
+# ============================================================
+# CREATE PART 2
+# ============================================================
+
+create_forest_plot(
+  data = cog_data_p2,
+  filename = "Forest_Plot_Cognitive_Ability_Part2.pdf",
+  page_number = 2
+)
+```
+
+
+#FIGURE 2#
+```{r}
+# ============================================================
+# META-REGRESSION FIGURE:
+# RELATIONSHIP BETWEEN FiO2 AND COGNITIVE EFFECT SIZE
+# ============================================================
+
+
+# ------------------------------------------------------------
+# Load required packages
+# ------------------------------------------------------------
+
+library(ggplot2)
+library(dplyr)
+library(scales)
+
+
+# ------------------------------------------------------------
+# 1. Extract the exact coefficient names from the fitted model
+# ------------------------------------------------------------
+
+coef_names <- names(coef(cog_meta_full))
+
+# Remove the intercept to obtain the moderator names required
+# for the prediction matrix
+
+mod_names <- coef_names[coef_names != "intrcpt"]
+
+
+# ------------------------------------------------------------
+# 2. Define the observed FiO2 range
+# ------------------------------------------------------------
+
+fio2_min <- min(
+  cog_ability_filt$Severity,
+  na.rm = TRUE
+)
+
+fio2_max <- max(
+  cog_ability_filt$Severity,
+  na.rm = TRUE
+)
+
+
+# ------------------------------------------------------------
+# 3. Calculate the mean used to centre Severity
+# ------------------------------------------------------------
+
+severity_mean <- mean(
+  cog_ability_filt$Severity,
+  na.rm = TRUE
+)
+
+
+# ------------------------------------------------------------
+# 4. Create prediction data
+# ------------------------------------------------------------
+
+# Generate 200 values across the observed FiO2 range
+
+pred_data <- data.frame(
+  
+  Severity = seq(
+    from = fio2_min,
+    to = fio2_max,
+    length.out = 200
+  )
+)
+
+
+# Convert raw FiO2 values to the centred Severity variable
+# used in the fitted meta-regression
+
+pred_data$Severity_c <- 
+  pred_data$Severity - severity_mean
+
+
+# ------------------------------------------------------------
+# 5. Create prediction moderator matrix
+# ------------------------------------------------------------
+
+# Create a matrix with exactly the same moderator names
+# and ordering as the fitted cog_meta_full model.
+#
+# All moderators are initially set to zero:
+#
+# - log_duration_c = 0 -> mean log-transformed duration
+# - Age_c = 0 -> mean age
+# - factor dummy variables = 0 -> reference categories
+#
+# Severity_c is then allowed to vary across its observed range.
+
+X_new <- matrix(
+  0,
+  nrow = nrow(pred_data),
+  ncol = length(mod_names)
+)
+
+colnames(X_new) <- mod_names
+
+
+# ------------------------------------------------------------
+# 6. Insert varying centred Severity values
+# ------------------------------------------------------------
+
+severity_col <- which(
+  colnames(X_new) == "Severity_c"
+)
+
+
+# Stop with a clear error if the severity moderator
+# cannot be identified
+
+if (length(severity_col) != 1) {
+  
+  stop(
+    "Could not uniquely identify the Severity_c moderator ",
+    "in the fitted model."
+  )
+}
+
+
+# Insert the centred Severity values into the correct column
+
+X_new[, severity_col] <- pred_data$Severity_c
+
+
+# ------------------------------------------------------------
+# 7. Generate model predictions
+# ------------------------------------------------------------
+
+preds <- predict(
+  cog_meta_full,
+  newmods = X_new
+)
+
+
+# ------------------------------------------------------------
+# 8. Add predicted values and 95 Percent confidence intervals
+# ------------------------------------------------------------
+
+pred_data$Predicted <- preds$pred
+
+pred_data$CI_Lower <- preds$ci.lb
+
+pred_data$CI_Upper <- preds$ci.ub
+
+
+# ------------------------------------------------------------
+# 9. Create publication-quality figure
+# ------------------------------------------------------------
+
+pred_plot <- ggplot() +
+  
+  
+  # ----------------------------------------------------------
+  # Observed individual effect sizes
+  # ----------------------------------------------------------
+  
+  # These represent the raw observed Hedges' g values.
+  #
+  # Semi-transparency is used because multiple effect sizes
+  # may overlap at similar FiO2 values.
+  
+  geom_point(
+    data = cog_ability_filt,
+    aes(
+      x = Severity,
+      y = yi
+    ),
+    colour = "grey40",
+    alpha = 0.25,
+    size = 1.8
+  ) +
+  
+  
+  # ----------------------------------------------------------
+  # 95% confidence interval around adjusted prediction
+  # ----------------------------------------------------------
+  
+  geom_ribbon(
+    data = pred_data,
+    aes(
+      x = Severity,
+      ymin = CI_Lower,
+      ymax = CI_Upper
+    ),
+    fill = "grey70",
+    alpha = 0.40
+  ) +
+  
+  
+  # ----------------------------------------------------------
+  # Adjusted meta-regression line
+  # ----------------------------------------------------------
+  
+  geom_line(
+    data = pred_data,
+    aes(
+      x = Severity,
+      y = Predicted
+    ),
+    colour = "black",
+    linewidth = 1.1
+  ) +
+  
+  
+  # ----------------------------------------------------------
+  # No-effect reference line
+  # ----------------------------------------------------------
+  
+  geom_hline(
+    yintercept = 0,
+    linetype = "dashed",
+    colour = "grey30",
+    linewidth = 0.7
+  ) +
+  
+  
+  # ----------------------------------------------------------
+  # Axis labels
+  # ----------------------------------------------------------
+  
+  labs(
+    x = expression(
+      "Fraction of inspired oxygen (" * FiO[2] * ")"
+    ),
+    
+    y = expression(
+      "Cognitive effect size (Hedges' " * g * ")"
+    )
+  ) +
+  
+  
+  # ----------------------------------------------------------
+  # X-axis formatting
+  # ----------------------------------------------------------
+  
+  scale_x_continuous(
+    limits = c(
+      fio2_min,
+      fio2_max
+    ),
+    
+    breaks = pretty_breaks(
+      n = 6
+    ),
+    
+    labels = label_number(
+      accuracy = 0.001
+    )
+  ) +
+  
+  
+  # ----------------------------------------------------------
+  # Publication-style theme
+  # ----------------------------------------------------------
+  
+  theme_classic(
+    base_size = 12
+  ) +
+  
+  theme(
+    
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    
+    axis.text = element_text(
+      size = 11
+    ),
+    
+    axis.line = element_line(
+      linewidth = 0.7
+    ),
+    
+    plot.margin = margin(
+      t = 10,
+      r = 15,
+      b = 10,
+      l = 15
+    )
+  )
+
+
+# ------------------------------------------------------------
+# 10. Display figure
+# ------------------------------------------------------------
+
+print(pred_plot)
+
+
+# ------------------------------------------------------------
+# 11. Save high-resolution PNG
+# ------------------------------------------------------------
+
+ggsave(
+  filename = "FiO2_meta_regression.png",
+  plot = pred_plot,
+  width = 7,
+  height = 5,
+  units = "in",
+  dpi = 600
+)
+
+
+# ------------------------------------------------------------
+# 12. Save vector PDF
+# ------------------------------------------------------------
+
+ggsave(
+  filename = "FiO2_meta_regression.pdf",
+  plot = pred_plot,
+  width = 7,
+  height = 5,
+  units = "in"
+)
+```
+
+# Fluid reasoning ability (Gf)
+```{r}
+
+# ============================================================
+# FLUID REASONING ABILITY (Gf)
+# ============================================================
+
+
+# -----------------------------
+# SUBSET DATA
+# -----------------------------
+
+reasoning_data <- cog_ability_filt %>%
+  filter(chc_code == "gf")
+
+
+# Complete-case dataset for duration moderator
+reasoning_duration_data <- reasoning_data %>%
+  filter(!is.na(log_duration_c))
+
+
+# ============================================================
+# MAIN EFFECT MODEL
+# ============================================================
+
+reasoning_meta_red <- rma(
+  yi = yi,
+  vi = vi,
+  data = reasoning_data,
+  method = "REML"
+)
+
+
+# -----------------------------
+# MAIN EFFECT RESULTS
+# -----------------------------
+
+summary_red <- summary(reasoning_meta_red)
+
+model_stats <- data.frame(
+  Estimate = as.numeric(summary_red$beta),
+  SE = summary_red$se,
+  zval = summary_red$zval,
+  pval = summary_red$pval,
+  CI_Lower = summary_red$ci.lb,
+  CI_Upper = summary_red$ci.ub
+)
+
+rownames(model_stats) <- "Overall Effect"
+
+model_stats <- model_stats %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+kable(
+  model_stats,
+  caption = "Main Effect Model: Fluid Reasoning"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# HETEROGENEITY AND MODEL FIT STATISTICS
+# ============================================================
+
+# 95% prediction interval
+pred_red <- predict(reasoning_meta_red)
+
+
+# Number of independent studies
+n_studies_reasoning <- n_distinct(reasoning_data$study)
+
+
+model_fit_stats <- data.frame(
+  Effect_Sizes = reasoning_meta_red$k,
+  Studies = n_studies_reasoning,
+  QE = summary_red$QE,
+  QE_df = summary_red$k - summary_red$p,
+  QE_p = summary_red$QEp,
+  I2 = summary_red$I2,
+  H2 = summary_red$H2,
+  Tau2 = summary_red$tau2,
+  Prediction_Lower = pred_red$pi.lb,
+  Prediction_Upper = pred_red$pi.ub,
+  AIC = AIC(reasoning_meta_red),
+  BIC = BIC(reasoning_meta_red)
+)
+
+
+# Round numerical values
+model_fit_stats <- model_fit_stats %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  model_fit_stats,
+  caption = "Heterogeneity and Model Fit Statistics: Fluid Reasoning"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# EXPLORATORY UNIVARIABLE MODERATOR MODELS
+# ============================================================
+
+# Separate univariable models are used to limit model complexity
+# relative to the number of independent studies.
+
+
+# -----------------------------
+# SEVERITY MODERATOR
+# -----------------------------
+
+reasoning_severity <- rma.mv(
+  yi,
+  vi,
+  mods = ~ Severity_c,
+  random = ~ 1 | study,
+  data = reasoning_data,
+  method = "REML"
+)
+
+
+# -----------------------------
+# DURATION MODERATOR
+# -----------------------------
+
+reasoning_duration <- rma.mv(
+  yi,
+  vi,
+  mods = ~ log_duration_c,
+  random = ~ 1 | study,
+  data = reasoning_duration_data,
+  method = "REML"
+)
+
+
+# -----------------------------
+# AGE MODERATOR
+# -----------------------------
+
+reasoning_age <- rma.mv(
+  yi,
+  vi,
+  mods = ~ Age_c,
+  random = ~ 1 | study,
+  data = reasoning_data,
+  method = "REML"
+)
+
+
+# -----------------------------
+# HYPOXIA TYPE MODERATOR
+# -----------------------------
+
+reasoning_type <- rma.mv(
+  yi,
+  vi,
+  mods = ~ T.2,
+  random = ~ 1 | study,
+  data = reasoning_data,
+  method = "REML"
+)
+
+
+# ============================================================
+# EXTRACT SEVERITY RESULTS
+# ============================================================
+
+summary_severity <- summary(reasoning_severity)
+
+severity_results <- data.frame(
+  Term = rownames(summary_severity$beta),
+  Estimate = summary_severity$beta[, 1],
+  SE = summary_severity$se,
+  zval = summary_severity$zval,
+  pval = summary_severity$pval,
+  CI_Lower = summary_severity$ci.lb,
+  CI_Upper = summary_severity$ci.ub
+)
+
+severity_results$Term <- gsub(
+  "intrcpt",
+  "Intercept",
+  severity_results$Term
+)
+
+severity_results$Term <- gsub(
+  "Severity_c",
+  "Severity",
+  severity_results$Term
+)
+
+severity_results <- severity_results %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+# ============================================================
+# EXTRACT DURATION RESULTS
+# ============================================================
+
+summary_duration <- summary(reasoning_duration)
+
+duration_results <- data.frame(
+  Term = rownames(summary_duration$beta),
+  Estimate = summary_duration$beta[, 1],
+  SE = summary_duration$se,
+  zval = summary_duration$zval,
+  pval = summary_duration$pval,
+  CI_Lower = summary_duration$ci.lb,
+  CI_Upper = summary_duration$ci.ub
+)
+
+duration_results$Term <- gsub(
+  "intrcpt",
+  "Intercept",
+  duration_results$Term
+)
+
+duration_results$Term <- gsub(
+  "log_duration_c",
+  "Log Duration",
+  duration_results$Term
+)
+
+duration_results <- duration_results %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+# ============================================================
+# EXTRACT AGE RESULTS
+# ============================================================
+
+summary_age <- summary(reasoning_age)
+
+age_results <- data.frame(
+  Term = rownames(summary_age$beta),
+  Estimate = summary_age$beta[, 1],
+  SE = summary_age$se,
+  zval = summary_age$zval,
+  pval = summary_age$pval,
+  CI_Lower = summary_age$ci.lb,
+  CI_Upper = summary_age$ci.ub
+)
+
+age_results$Term <- gsub(
+  "intrcpt",
+  "Intercept",
+  age_results$Term
+)
+
+age_results$Term <- gsub(
+  "Age_c",
+  "Age",
+  age_results$Term
+)
+
+age_results <- age_results %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+# ============================================================
+# EXTRACT HYPOXIA TYPE RESULTS
+# ============================================================
+
+summary_type <- summary(reasoning_type)
+
+type_results <- data.frame(
+  Term = rownames(summary_type$beta),
+  Estimate = summary_type$beta[, 1],
+  SE = summary_type$se,
+  zval = summary_type$zval,
+  pval = summary_type$pval,
+  CI_Lower = summary_type$ci.lb,
+  CI_Upper = summary_type$ci.ub
+)
+
+type_results$Term <- gsub(
+  "intrcpt",
+  "Intercept",
+  type_results$Term
+)
+
+type_results$Term <- gsub(
+  "T.2normobaric hypoxia",
+  "Normobaric vs Hypobaric",
+  type_results$Term
+)
+
+type_results <- type_results %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+# ============================================================
+# COMBINE MODERATOR COEFFICIENT RESULTS
+# ============================================================
+
+moderator_results <- bind_rows(
+  Severity = severity_results,
+  Duration = duration_results,
+  Age = age_results,
+  Hypoxia_Type = type_results,
+  .id = "Moderator_Model"
+)
+
+
+kable(
+  moderator_results,
+  caption = "Exploratory Univariable Moderator Models: Fluid Reasoning"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position","scale_down")
+  )
+
+
+# ============================================================
+# MODERATOR MODEL FIT STATISTICS
+# ============================================================
+
+# Helper function to extract model-level statistics
+
+extract_mod_fit <- function(model, data, model_name) {
+  
+  model_summary <- summary(model)
+  
+  data.frame(
+    Moderator_Model = model_name,
+    Effect_Sizes = model$k,
+    Studies = n_distinct(data$study),
+    QM = model_summary$QM,
+    QM_df = model_summary$m,
+    QM_p = model_summary$QMp,
+    QE = model_summary$QE,
+    QE_df = model_summary$k - model_summary$p,
+    QE_p = model_summary$QEp,
+    Tau2 = sum(model$sigma2),
+    AIC = AIC(model),
+    BIC = BIC(model)
+  )
+}
+
+
+moderator_fit_stats <- bind_rows(
+  
+  extract_mod_fit(
+    reasoning_severity,
+    reasoning_data,
+    "Severity"
+  ),
+  
+  extract_mod_fit(
+    reasoning_duration,
+    reasoning_duration_data,
+    "Duration"
+  ),
+  
+  extract_mod_fit(
+    reasoning_age,
+    reasoning_data,
+    "Age"
+  ),
+  
+  extract_mod_fit(
+    reasoning_type,
+    reasoning_data,
+    "Hypoxia Type"
+  )
+)
+
+
+moderator_fit_stats <- moderator_fit_stats %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  moderator_fit_stats,
+  caption = "Model Fit Statistics for Exploratory Univariable Moderator Models"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# NUMBER OF EFFECT SIZES AND STUDIES CONTRIBUTING TO MODELS
+# ============================================================
+
+moderator_k <- data.frame(
+  
+  Model = c(
+    "Severity",
+    "Duration",
+    "Age",
+    "Hypoxia Type"
+  ),
+  
+  Effect_Sizes = c(
+    nrow(reasoning_data %>% filter(!is.na(Severity_c))),
+    nrow(reasoning_duration_data),
+    nrow(reasoning_data %>% filter(!is.na(Age_c))),
+    nrow(reasoning_data %>% filter(!is.na(T.2)))
+  ),
+  
+  Studies = c(
+    
+    reasoning_data %>%
+      filter(!is.na(Severity_c)) %>%
+      summarise(n = n_distinct(study)) %>%
+      pull(n),
+    
+    reasoning_duration_data %>%
+      summarise(n = n_distinct(study)) %>%
+      pull(n),
+    
+    reasoning_data %>%
+      filter(!is.na(Age_c)) %>%
+      summarise(n = n_distinct(study)) %>%
+      pull(n),
+    
+    reasoning_data %>%
+      filter(!is.na(T.2)) %>%
+      summarise(n = n_distinct(study)) %>%
+      pull(n)
+  )
+)
+
+
+kable(
+  moderator_k,
+  caption = "Data Contributing to Exploratory Moderator Models"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# FUNNEL PLOT
+# ============================================================
+
+funnel(
+  reasoning_meta_red,
+  main = "Funnel Plot: Fluid Reasoning (Gf)",
+  xlab = "Observed Effect Size (Hedges' g)",
+  ylab = "Standard Error",
+  refline = 0
+)
+
+
+# ============================================================
+# TRIM-AND-FILL MODEL
+# ============================================================
+
+tf_model <- trimfill(reasoning_meta_red)
+
+tf_summary <- summary(tf_model)
+
+
+# -----------------------------
+# TRIM-AND-FILL EFFECT
+# -----------------------------
+
+tf_model_stats <- data.frame(
+  Estimate = as.numeric(tf_summary$beta),
+  SE = tf_summary$se,
+  zval = tf_summary$zval,
+  pval = tf_summary$pval,
+  CI_Lower = tf_summary$ci.lb,
+  CI_Upper = tf_summary$ci.ub
+)
+
+rownames(tf_model_stats) <- "Trim-and-Fill Effect"
+
+
+tf_model_stats <- tf_model_stats %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+kable(
+  tf_model_stats,
+  caption = "Trim-and-Fill Corrected Model: Fluid Reasoning"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# TRIM-AND-FILL IMPUTATION RESULTS
+# ============================================================
+
+n_imputed <- ifelse(
+  is.null(tf_model$k0),
+  0,
+  abs(tf_model$k0)
+)
+
+
+trimfill_info <- data.frame(
+  Original_Effect_Sizes = reasoning_meta_red$k,
+  Imputed_Effect_Sizes = n_imputed,
+  Total_Effect_Sizes = reasoning_meta_red$k + n_imputed
+)
+
+
+kable(
+  trimfill_info,
+  caption = "Trim-and-Fill Imputation Results: Fluid Reasoning"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+```
+
+# Long-term storage and retrieval ability (Glr)
+```{r}
+# ============================================================
+# LONG-TERM STORAGE AND RETRIEVAL ABILITY (Glr)
+# ============================================================
+
+
+# -----------------------------
+# SUBSET DATA
+# -----------------------------
+
+retrieval_data <- cog_ability_filt %>%
+  filter(chc_code == "glr")
+
+
+# Complete-case dataset for duration moderator
+retrieval_duration_data <- retrieval_data %>%
+  filter(!is.na(log_duration_c))
+
+
+# ============================================================
+# MAIN EFFECT MODEL
+# ============================================================
+
+retrieval_meta_red <- rma(
+  yi = yi,
+  vi = vi,
+  data = retrieval_data,
+  method = "REML"
+)
+
+
+# -----------------------------
+# MAIN EFFECT RESULTS
+# -----------------------------
+
+summary_red <- summary(retrieval_meta_red)
+
+model_stats <- data.frame(
+  Estimate = as.numeric(summary_red$beta),
+  SE = summary_red$se,
+  zval = summary_red$zval,
+  pval = summary_red$pval,
+  CI_Lower = summary_red$ci.lb,
+  CI_Upper = summary_red$ci.ub
+)
+
+rownames(model_stats) <- "Overall Effect"
+
+
+model_stats <- model_stats %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+kable(
+  model_stats,
+  caption = "Main Effect Model: Long-Term Storage and Retrieval"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# HETEROGENEITY AND MODEL FIT STATISTICS
+# ============================================================
+
+# 95% prediction interval
+pred_red <- predict(retrieval_meta_red)
+
+
+# Number of independent studies
+n_studies_retrieval <- n_distinct(retrieval_data$study)
+
+
+model_fit_stats <- data.frame(
+  Effect_Sizes = retrieval_meta_red$k,
+  Studies = n_studies_retrieval,
+  QE = summary_red$QE,
+  QE_df = summary_red$k - summary_red$p,
+  QE_p = summary_red$QEp,
+  I2 = summary_red$I2,
+  H2 = summary_red$H2,
+  Tau2 = summary_red$tau2,
+  Prediction_Lower = pred_red$pi.lb,
+  Prediction_Upper = pred_red$pi.ub,
+  AIC = AIC(retrieval_meta_red),
+  BIC = BIC(retrieval_meta_red)
+)
+
+
+model_fit_stats <- model_fit_stats %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  model_fit_stats,
+  caption = "Heterogeneity and Model Fit Statistics: Long-Term Storage and Retrieval"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# EXPLORATORY UNIVARIABLE MODERATOR MODELS
+# ============================================================
+
+# Separate univariable models are used because of the limited
+# number of independent studies within this CHC ability.
+
+
+# -----------------------------
+# SEVERITY MODERATOR
+# -----------------------------
+
+retrieval_severity <- rma.mv(
+  yi,
+  vi,
+  mods = ~ Severity_c,
+  random = ~ 1 | study,
+  data = retrieval_data,
+  method = "REML"
+)
+
+
+# -----------------------------
+# DURATION MODERATOR
+# -----------------------------
+
+retrieval_duration <- rma.mv(
+  yi,
+  vi,
+  mods = ~ log_duration_c,
+  random = ~ 1 | study,
+  data = retrieval_duration_data,
+  method = "REML"
+)
+
+
+# -----------------------------
+# AGE MODERATOR
+# -----------------------------
+
+retrieval_age <- rma.mv(
+  yi,
+  vi,
+  mods = ~ Age_c,
+  random = ~ 1 | study,
+  data = retrieval_data,
+  method = "REML"
+)
+
+
+# ============================================================
+# EXTRACT SEVERITY RESULTS
+# ============================================================
+
+summary_severity <- summary(retrieval_severity)
+
+severity_results <- data.frame(
+  Term = rownames(summary_severity$beta),
+  Estimate = summary_severity$beta[, 1],
+  SE = summary_severity$se,
+  zval = summary_severity$zval,
+  pval = summary_severity$pval,
+  CI_Lower = summary_severity$ci.lb,
+  CI_Upper = summary_severity$ci.ub
+)
+
+
+severity_results$Term <- gsub(
+  "intrcpt",
+  "Intercept",
+  severity_results$Term
+)
+
+severity_results$Term <- gsub(
+  "Severity_c",
+  "Severity",
+  severity_results$Term
+)
+
+
+severity_results <- severity_results %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+# ============================================================
+# EXTRACT DURATION RESULTS
+# ============================================================
+
+summary_duration <- summary(retrieval_duration)
+
+duration_results <- data.frame(
+  Term = rownames(summary_duration$beta),
+  Estimate = summary_duration$beta[, 1],
+  SE = summary_duration$se,
+  zval = summary_duration$zval,
+  pval = summary_duration$pval,
+  CI_Lower = summary_duration$ci.lb,
+  CI_Upper = summary_duration$ci.ub
+)
+
+
+duration_results$Term <- gsub(
+  "intrcpt",
+  "Intercept",
+  duration_results$Term
+)
+
+duration_results$Term <- gsub(
+  "log_duration_c",
+  "Log Duration",
+  duration_results$Term
+)
+
+
+duration_results <- duration_results %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+# ============================================================
+# EXTRACT AGE RESULTS
+# ============================================================
+
+summary_age <- summary(retrieval_age)
+
+age_results <- data.frame(
+  Term = rownames(summary_age$beta),
+  Estimate = summary_age$beta[, 1],
+  SE = summary_age$se,
+  zval = summary_age$zval,
+  pval = summary_age$pval,
+  CI_Lower = summary_age$ci.lb,
+  CI_Upper = summary_age$ci.ub
+)
+
+
+age_results$Term <- gsub(
+  "intrcpt",
+  "Intercept",
+  age_results$Term
+)
+
+age_results$Term <- gsub(
+  "Age_c",
+  "Age",
+  age_results$Term
+)
+
+
+age_results <- age_results %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+# ============================================================
+# COMBINE MODERATOR COEFFICIENT RESULTS
+# ============================================================
+
+moderator_results <- bind_rows(
+  Severity = severity_results,
+  Duration = duration_results,
+  Age = age_results,
+  .id = "Moderator_Model"
+)
+
+
+kable(
+  moderator_results,
+  caption = "Exploratory Univariable Moderator Models: Long-Term Storage and Retrieval"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# MODERATOR MODEL FIT STATISTICS
+# ============================================================
+
+# Helper function to extract model-level statistics
+
+extract_mod_fit <- function(model, data, model_name) {
+  
+  model_summary <- summary(model)
+  
+  data.frame(
+    Moderator_Model = model_name,
+    Effect_Sizes = model$k,
+    Studies = n_distinct(data$study),
+    QM = model_summary$QM,
+    QM_df = model_summary$m,
+    QM_p = model_summary$QMp,
+    QE = model_summary$QE,
+    QE_df = model_summary$k - model_summary$p,
+    QE_p = model_summary$QEp,
+    Tau2 = sum(model$sigma2),
+    AIC = AIC(model),
+    BIC = BIC(model)
+  )
+}
+
+
+moderator_fit_stats <- bind_rows(
+  
+  extract_mod_fit(
+    retrieval_severity,
+    retrieval_data,
+    "Severity"
+  ),
+  
+  extract_mod_fit(
+    retrieval_duration,
+    retrieval_duration_data,
+    "Duration"
+  ),
+  
+  extract_mod_fit(
+    retrieval_age,
+    retrieval_data,
+    "Age"
+  )
+)
+
+
+moderator_fit_stats <- moderator_fit_stats %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  moderator_fit_stats,
+  caption = "Model Fit Statistics for Exploratory Univariable Moderator Models: Long-Term Storage and Retrieval"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# FUNNEL PLOT
+# ============================================================
+
+funnel(
+  retrieval_meta_red,
+  main = "Funnel Plot: Long-Term Storage and Retrieval (Glr)",
+  xlab = "Observed Effect Size (Hedges' g)",
+  ylab = "Standard Error",
+  refline = 0
+)
+
+
+# ============================================================
+# TRIM-AND-FILL MODEL
+# ============================================================
+
+tf_model <- trimfill(retrieval_meta_red)
+
+tf_summary <- summary(tf_model)
+
+
+# -----------------------------
+# TRIM-AND-FILL EFFECT
+# -----------------------------
+
+tf_model_stats <- data.frame(
+  Estimate = as.numeric(tf_summary$beta),
+  SE = tf_summary$se,
+  zval = tf_summary$zval,
+  pval = tf_summary$pval,
+  CI_Lower = tf_summary$ci.lb,
+  CI_Upper = tf_summary$ci.ub
+)
+
+rownames(tf_model_stats) <- "Trim-and-Fill Effect"
+
+
+tf_model_stats <- tf_model_stats %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+kable(
+  tf_model_stats,
+  caption = "Trim-and-Fill Corrected Model: Long-Term Storage and Retrieval"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ============================================================
+# TRIM-AND-FILL IMPUTATION RESULTS
+# ============================================================
+
+n_imputed <- ifelse(
+  is.null(tf_model$k0),
+  0,
+  abs(tf_model$k0)
+)
+
+
+trimfill_info <- data.frame(
+  Original_Effect_Sizes = retrieval_meta_red$k,
+  Imputed_Effect_Sizes = n_imputed,
+  Total_Effect_Sizes = retrieval_meta_red$k + n_imputed
+)
+
+
+kable(
+  trimfill_info,
+  caption = "Trim-and-Fill Imputation Results: Long-Term Storage and Retrieval"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+```
+
+#Psychomotor speed
+```{r}
+# ==================================================
+# PSYCHOMOTOR SPEED (Gps)
+# ==================================================
+
+# -----------------------------
+# SUBSET DATA
+# -----------------------------
+
+psycho_data <- cog_ability_filt %>%
+  filter(chc_code == "gps")
+
+
+# -----------------------------
+# MAIN EFFECT MODEL
+# -----------------------------
+
+psycho_meta_red <- rma(
+  yi = yi,
+  vi = vi,
+  data = psycho_data,
+  method = "REML"
+)
+
+
+# -----------------------------
+# MAIN EFFECT RESULTS
+# -----------------------------
+
+summary_red <- summary(psycho_meta_red)
+
+model_stats <- data.frame(
+  Term = "Overall Effect",
+  Estimate = summary_red$beta[, 1],
+  SE = summary_red$se,
+  zval = summary_red$zval,
+  pval = summary_red$pval,
+  CI_Lower = summary_red$ci.lb,
+  CI_Upper = summary_red$ci.ub
+) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  model_stats,
+  caption = "Main Effect Model: Psychomotor Speed"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position","scale_down")
+  )
+
+
+# -----------------------------
+# HETEROGENEITY STATISTICS
+# -----------------------------
+
+# Prediction interval
+pred_red <- predict(
+  psycho_meta_red,
+  pi = TRUE
+)
+
+heterogeneity_stats <- data.frame(
+  Effect_Sizes = psycho_meta_red$k,
+  Studies = n_distinct(psycho_data$study),
+  QE = psycho_meta_red$QE,
+  QE_df = psycho_meta_red$k - 1,
+  QE_p = psycho_meta_red$QEp,
+  I2 = psycho_meta_red$I2,
+  Tau2 = psycho_meta_red$tau2,
+  Prediction_Lower = pred_red$pi.lb,
+  Prediction_Upper = pred_red$pi.ub
+) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  heterogeneity_stats,
+  caption = "Heterogeneity and Prediction Interval Statistics"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ==================================================
+# EXPLORATORY UNIVARIABLE MODERATOR MODELS
+# ==================================================
+
+# Due to the small number of independent studies,
+# separate univariable moderator models are used.
+# Duration and hypoxia type are not examined.
+
+
+# -----------------------------
+# SEVERITY MODERATOR
+# -----------------------------
+
+psycho_severity <- rma.mv(
+  yi,
+  vi,
+  mods = ~ Severity_c,
+  random = ~ 1 | study,
+  data = psycho_data,
+  method = "REML"
+)
+
+
+# -----------------------------
+# AGE MODERATOR
+# -----------------------------
+
+psycho_age <- rma.mv(
+  yi,
+  vi,
+  mods = ~ Age_c,
+  random = ~ 1 | study,
+  data = psycho_data,
+  method = "REML"
+)
+
+
+# ==================================================
+# FUNCTION TO EXTRACT MODERATOR RESULTS
+# ==================================================
+
+extract_mod_results <- function(model, model_name) {
+  
+  model_summary <- summary(model)
+  
+  results <- data.frame(
+    Moderator_Model = model_name,
+    Term = rownames(model_summary$beta),
+    Estimate = model_summary$beta[, 1],
+    SE = model_summary$se,
+    zval = model_summary$zval,
+    pval = model_summary$pval,
+    CI_Lower = model_summary$ci.lb,
+    CI_Upper = model_summary$ci.ub
+  )
+  
+  results$Term <- gsub(
+    "intrcpt",
+    "Intercept",
+    results$Term
+  )
+  
+  results$Term <- gsub(
+    "Severity_c",
+    "Severity",
+    results$Term
+  )
+  
+  results$Term <- gsub(
+    "Age_c",
+    "Age",
+    results$Term
+  )
+  
+  results %>%
+    mutate(
+      across(
+        where(is.numeric),
+        round,
+        digits = 3
+      )
+    )
+}
+
+
+# -----------------------------
+# EXTRACT MODERATOR RESULTS
+# -----------------------------
+
+severity_results <- extract_mod_results(
+  psycho_severity,
+  "Severity"
+)
+
+age_results <- extract_mod_results(
+  psycho_age,
+  "Age"
+)
+
+
+# -----------------------------
+# COMBINE MODERATOR RESULTS
+# -----------------------------
+
+moderator_results <- bind_rows(
+  severity_results,
+  age_results
+)
+
+
+kable(
+  moderator_results,
+  caption = "Exploratory Univariable Moderator Models: Psychomotor Speed"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ==================================================
+# MODERATOR MODEL FIT STATISTICS
+# ==================================================
+
+moderator_fit <- data.frame(
+  
+  Model = c(
+    "Severity",
+    "Age"
+  ),
+  
+  Effect_Sizes = c(
+    psycho_severity$k,
+    psycho_age$k
+  ),
+  
+  Studies = c(
+    n_distinct(
+      psycho_data %>%
+        filter(!is.na(Severity_c)) %>%
+        pull(study)
+    ),
+    
+    n_distinct(
+      psycho_data %>%
+        filter(!is.na(Age_c)) %>%
+        pull(study)
+    )
+  ),
+  
+  QM = c(
+    psycho_severity$QM,
+    psycho_age$QM
+  ),
+  
+  QM_df = c(
+    psycho_severity$m,
+    psycho_age$m
+  ),
+  
+  QM_p = c(
+    psycho_severity$QMp,
+    psycho_age$QMp
+  ),
+  
+  QE = c(
+    psycho_severity$QE,
+    psycho_age$QE
+  ),
+  
+  QE_df = c(
+    psycho_severity$k - psycho_severity$p,
+    psycho_age$k - psycho_age$p
+  ),
+  
+  QE_p = c(
+    psycho_severity$QEp,
+    psycho_age$QEp
+  ),
+  
+  Tau2 = c(
+    psycho_severity$sigma2,
+    psycho_age$sigma2
+  )
+) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  moderator_fit,
+  caption = "Model Fit Statistics for Exploratory Moderator Models"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ==================================================
+# DATA CONTRIBUTING TO MODERATOR MODELS
+# ==================================================
+
+moderator_k <- data.frame(
+  
+  Model = c(
+    "Severity",
+    "Age"
+  ),
+  
+  Effect_Sizes = c(
+    nrow(
+      psycho_data %>%
+        filter(!is.na(Severity_c))
+    ),
+    
+    nrow(
+      psycho_data %>%
+        filter(!is.na(Age_c))
+    )
+  ),
+  
+  Studies = c(
+    psycho_data %>%
+      filter(!is.na(Severity_c)) %>%
+      summarise(n = n_distinct(study)) %>%
+      pull(n),
+    
+    psycho_data %>%
+      filter(!is.na(Age_c)) %>%
+      summarise(n = n_distinct(study)) %>%
+      pull(n)
+  )
+)
+
+
+kable(
+  moderator_k,
+  caption = "Data Contributing to Exploratory Moderator Models"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ==================================================
+# FUNNEL PLOT
+# ==================================================
+
+funnel(
+  psycho_meta_red,
+  main = "Funnel Plot: Psychomotor Speed (Gps)"
+)
+
+
+# ==================================================
+# TRIM-AND-FILL MODEL
+# ==================================================
+
+tf_model <- trimfill(
+  psycho_meta_red
+)
+
+tf_summary <- summary(
+  tf_model
+)
+
+
+# -----------------------------
+# TRIM-AND-FILL EFFECT
+# -----------------------------
+
+tf_model_stats <- data.frame(
+  Term = "Trim-and-Fill Effect",
+  Estimate = tf_summary$beta[, 1],
+  SE = tf_summary$se,
+  zval = tf_summary$zval,
+  pval = tf_summary$pval,
+  CI_Lower = tf_summary$ci.lb,
+  CI_Upper = tf_summary$ci.ub
+) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  tf_model_stats,
+  caption = "Trim-and-Fill Corrected Model: Psychomotor Speed"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# -----------------------------
+# TRIM-AND-FILL IMPUTATION RESULTS
+# -----------------------------
+
+trimfill_counts <- data.frame(
+  Original_Effect_Sizes = psycho_meta_red$k,
+  Imputed_Effect_Sizes = tf_model$k0,
+  Total_Effect_Sizes = psycho_meta_red$k + tf_model$k0
+)
+
+
+kable(
+  trimfill_counts,
+  caption = "Trim-and-Fill Imputation Results"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+```
+
+# Processing speed
+```{r}
+# ==================================================
+# PROCESSING SPEED (Gs)
+# ==================================================
+
+# -----------------------------
+# SUBSET DATA
+# -----------------------------
+
+speed_data <- cog_ability_filt %>%
+  filter(chc_code == "gs")
+
+
+# Create complete-case dataset for duration moderator
+speed_duration_data <- speed_data %>%
+  filter(!is.na(log_duration_c))
+
+
+# ==================================================
+# MAIN EFFECT MODEL
+# ==================================================
+
+speed_meta_red <- rma(
+  yi = yi,
+  vi = vi,
+  data = speed_data,
+  method = "REML"
+)
+
+
+# -----------------------------
+# MAIN EFFECT RESULTS
+# -----------------------------
+
+summary_red <- summary(speed_meta_red)
+
+model_stats <- data.frame(
+  Term = "Overall Effect",
+  Estimate = summary_red$beta[, 1],
+  SE = summary_red$se,
+  zval = summary_red$zval,
+  pval = summary_red$pval,
+  CI_Lower = summary_red$ci.lb,
+  CI_Upper = summary_red$ci.ub
+) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  model_stats,
+  caption = "Main Effect Model: Processing Speed"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ==================================================
+# HETEROGENEITY STATISTICS
+# ==================================================
+
+# Calculate 95% prediction interval
+pred_red <- predict(
+  speed_meta_red,
+  pi = TRUE
+)
+
+
+heterogeneity_stats <- data.frame(
+  Effect_Sizes = speed_meta_red$k,
+  Studies = n_distinct(speed_data$study),
+  QE = speed_meta_red$QE,
+  QE_df = speed_meta_red$k - 1,
+  QE_p = speed_meta_red$QEp,
+  I2 = speed_meta_red$I2,
+  Tau2 = speed_meta_red$tau2,
+  Prediction_Lower = pred_red$pi.lb,
+  Prediction_Upper = pred_red$pi.ub
+) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  heterogeneity_stats,
+  caption = "Heterogeneity and Prediction Interval Statistics"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down")
+  )
+
+
+# ==================================================
+# EXPLORATORY UNIVARIABLE MODERATOR MODELS
+# ==================================================
+
+# Univariable mixed-effects meta-regressions were used.
+# Hypoxia type was not included because the four-level
+# factor contained sparse categories.
+
+
+# -----------------------------
+# SEVERITY MODERATOR
+# -----------------------------
+
+speed_severity <- rma.mv(
+  yi,
+  vi,
+  mods = ~ Severity_c,
+  random = ~ 1 | study,
+  data = speed_data,
+  method = "REML"
+)
+
+
+# -----------------------------
+# DURATION MODERATOR
+# -----------------------------
+# Complete cases only
+
+speed_duration <- rma.mv(
+  yi,
+  vi,
+  mods = ~ log_duration_c,
+  random = ~ 1 | study,
+  data = speed_duration_data,
+  method = "REML"
+)
+
+
+# -----------------------------
+# AGE MODERATOR
+# -----------------------------
+
+speed_age <- rma.mv(
+  yi,
+  vi,
+  mods = ~ Age_c,
+  random = ~ 1 | study,
+  data = speed_data,
+  method = "REML"
+)
+
+
+# ==================================================
+# FUNCTION TO EXTRACT MODERATOR RESULTS
+# ==================================================
+
+extract_mod_results <- function(model, model_name) {
+  
+  model_summary <- summary(model)
+  
+  results <- data.frame(
+    Moderator_Model = model_name,
+    Term = rownames(model_summary$beta),
+    Estimate = model_summary$beta[, 1],
+    SE = model_summary$se,
+    zval = model_summary$zval,
+    pval = model_summary$pval,
+    CI_Lower = model_summary$ci.lb,
+    CI_Upper = model_summary$ci.ub
+  )
+  
+  # Improve intercept label
+  results$Term <- gsub(
+    "intrcpt",
+    "Intercept",
+    results$Term
+  )
+  
+  # Improve moderator labels
+  results$Term <- gsub(
+    "Severity_c",
+    "Severity",
+    results$Term
+  )
+  
+  results$Term <- gsub(
+    "log_duration_c",
+    "Log Duration",
+    results$Term
+  )
+  
+  results$Term <- gsub(
+    "Age_c",
+    "Age",
+    results$Term
+  )
+  
+  results %>%
+    mutate(
+      across(
+        where(is.numeric),
+        round,
+        digits = 3
+      )
+    )
+}
+
+
+# ==================================================
+# EXTRACT MODERATOR RESULTS
+# ==================================================
+
+severity_results <- extract_mod_results(
+  speed_severity,
+  "Severity"
+)
+
+
+duration_results <- extract_mod_results(
+  speed_duration,
+  "Duration"
+)
+
+
+age_results <- extract_mod_results(
+  speed_age,
+  "Age"
+)
+
+
+# ==================================================
+# COMBINE MODERATOR RESULTS
+# ==================================================
+
+moderator_results <- bind_rows(
+  severity_results,
+  duration_results,
+  age_results
+)
+
+
+kable(
+  moderator_results,
+  caption = "Exploratory Univariable Moderator Models: Processing Speed"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# MODERATOR MODEL FIT STATISTICS
+# ==================================================
+
+moderator_fit <- data.frame(
+  
+  Model = c(
+    "Severity",
+    "Duration",
+    "Age"
+  ),
+  
+  Effect_Sizes = c(
+    speed_severity$k,
+    speed_duration$k,
+    speed_age$k
+  ),
+  
+  Studies = c(
+    n_distinct(
+      speed_data %>%
+        filter(!is.na(Severity_c)) %>%
+        pull(study)
+    ),
+    
+    n_distinct(
+      speed_duration_data %>%
+        pull(study)
+    ),
+    
+    n_distinct(
+      speed_data %>%
+        filter(!is.na(Age_c)) %>%
+        pull(study)
+    )
+  ),
+  
+  QM = c(
+    speed_severity$QM,
+    speed_duration$QM,
+    speed_age$QM
+  ),
+  
+  QM_df = c(
+    speed_severity$m,
+    speed_duration$m,
+    speed_age$m
+  ),
+  
+  QM_p = c(
+    speed_severity$QMp,
+    speed_duration$QMp,
+    speed_age$QMp
+  ),
+  
+  QE = c(
+    speed_severity$QE,
+    speed_duration$QE,
+    speed_age$QE
+  ),
+  
+  QE_df = c(
+    speed_severity$k - speed_severity$p,
+    speed_duration$k - speed_duration$p,
+    speed_age$k - speed_age$p
+  ),
+  
+  QE_p = c(
+    speed_severity$QEp,
+    speed_duration$QEp,
+    speed_age$QEp
+  ),
+  
+  Tau2 = c(
+    speed_severity$sigma2,
+    speed_duration$sigma2,
+    speed_age$sigma2
+  )
+) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  moderator_fit,
+  caption = "Model Fit Statistics for Exploratory Moderator Models"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# DATA CONTRIBUTING TO MODERATOR MODELS
+# ==================================================
+
+moderator_k <- data.frame(
+  
+  Model = c(
+    "Severity",
+    "Duration",
+    "Age"
+  ),
+  
+  Effect_Sizes = c(
+    nrow(
+      speed_data %>%
+        filter(!is.na(Severity_c))
+    ),
+    
+    nrow(speed_duration_data),
+    
+    nrow(
+      speed_data %>%
+        filter(!is.na(Age_c))
+    )
+  ),
+  
+  Studies = c(
+    speed_data %>%
+      filter(!is.na(Severity_c)) %>%
+      summarise(n = n_distinct(study)) %>%
+      pull(n),
+    
+    speed_duration_data %>%
+      summarise(n = n_distinct(study)) %>%
+      pull(n),
+    
+    speed_data %>%
+      filter(!is.na(Age_c)) %>%
+      summarise(n = n_distinct(study)) %>%
+      pull(n)
+  )
+)
+
+
+kable(
+  moderator_k,
+  caption = "Data Contributing to Exploratory Moderator Models"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# FUNNEL PLOT
+# ==================================================
+
+funnel(
+  speed_meta_red,
+  main = "Funnel Plot: Processing Speed (Gs)"
+)
+
+
+# ==================================================
+# TRIM-AND-FILL MODEL
+# ==================================================
+
+tf_model <- trimfill(
+  speed_meta_red
+)
+
+tf_summary <- summary(
+  tf_model
+)
+
+
+# -----------------------------
+# TRIM-AND-FILL EFFECT
+# -----------------------------
+
+tf_model_stats <- data.frame(
+  Term = "Trim-and-Fill Effect",
+  Estimate = tf_summary$beta[, 1],
+  SE = tf_summary$se,
+  zval = tf_summary$zval,
+  pval = tf_summary$pval,
+  CI_Lower = tf_summary$ci.lb,
+  CI_Upper = tf_summary$ci.ub
+) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  tf_model_stats,
+  caption = "Trim-and-Fill Corrected Model: Processing Speed"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# -----------------------------
+# TRIM-AND-FILL IMPUTATION RESULTS
+# -----------------------------
+
+trimfill_counts <- data.frame(
+  Original_Effect_Sizes = speed_meta_red$k,
+  Imputed_Effect_Sizes = tf_model$k0,
+  Total_Effect_Sizes = speed_meta_red$k + tf_model$k0
+)
+
+
+kable(
+  trimfill_counts,
+  caption = "Trim-and-Fill Imputation Results"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+```
+
+# Short-term memory (Gsm)
+```{r}
+
+# ==================================================
+# SUBSET DATA
+# ==================================================
+
+short_data <- cog_ability_filt %>%
+  filter(chc_code == "gsm")
+
+# Complete-case datasets for moderator analyses
+short_severity_data <- short_data %>%
+  filter(!is.na(Severity_c))
+
+short_duration_data <- short_data %>%
+  filter(!is.na(log_duration_c))
+
+short_age_data <- short_data %>%
+  filter(!is.na(Age_c))
+
+# Restrict hypoxia type analysis to adequately represented categories
+short_type_data <- short_data %>%
+  filter(
+    T.2 %in% c("hypobaric hypoxia", "normobaric hypoxia")
+  ) %>%
+  droplevels()
+
+
+# ==================================================
+# MAIN EFFECT MODEL
+# ==================================================
+
+short_meta_red <- rma(
+  yi = yi,
+  vi = vi,
+  data = short_data,
+  method = "REML"
+)
+
+summary_red <- summary(short_meta_red)
+
+# -----------------------------
+# Main effect coefficient
+# -----------------------------
+
+model_stats <- data.frame(
+  Term = "Overall Effect",
+  Estimate = summary_red$beta[, 1],
+  SE = summary_red$se,
+  zval = summary_red$zval,
+  pval = summary_red$pval,
+  CI_Lower = summary_red$ci.lb,
+  CI_Upper = summary_red$ci.ub
+) %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+kable(
+  model_stats,
+  caption = "Main Effect Model: Short-Term Memory (Gsm)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# MAIN EFFECT MODEL FIT AND HETEROGENEITY
+# ==================================================
+
+# 95% prediction interval
+short_pred <- predict(short_meta_red, level = 95)
+
+main_fit_stats <- data.frame(
+  Statistic = c(
+    "Effect Sizes (k)",
+    "Independent Studies",
+    "Q",
+    "Q df",
+    "Q p-value",
+    "I² (%)",
+    "Tau²",
+    "Tau",
+    "95% Prediction Interval Lower",
+    "95% Prediction Interval Upper"
+  ),
+
+  Value = c(
+    short_meta_red$k,
+    n_distinct(short_data$study),
+    short_meta_red$QE,
+    short_meta_red$k - short_meta_red$p,
+    short_meta_red$QEp,
+    short_meta_red$I2,
+    short_meta_red$tau2,
+    sqrt(short_meta_red$tau2),
+    short_pred$pi.lb,
+    short_pred$pi.ub
+  )
+) %>%
+  mutate(
+    Value = round(Value, 3)
+  )
+
+
+kable(
+  main_fit_stats,
+  caption = "Model Fit and Heterogeneity Statistics: Short-Term Memory (Gsm)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# EXPLORATORY UNIVARIABLE MODERATOR MODELS
+# ==================================================
+
+
+# --------------------------------------------------
+# Severity moderator
+# --------------------------------------------------
+
+short_severity <- rma.mv(
+  yi,
+  vi,
+  mods = ~ Severity_c,
+  random = ~ 1 | study,
+  data = short_severity_data,
+  method = "REML"
+)
+
+
+# --------------------------------------------------
+# Duration moderator
+# --------------------------------------------------
+
+short_duration <- rma.mv(
+  yi,
+  vi,
+  mods = ~ log_duration_c,
+  random = ~ 1 | study,
+  data = short_duration_data,
+  method = "REML"
+)
+
+
+# --------------------------------------------------
+# Age moderator
+# --------------------------------------------------
+
+short_age <- rma.mv(
+  yi,
+  vi,
+  mods = ~ Age_c,
+  random = ~ 1 | study,
+  data = short_age_data,
+  method = "REML"
+)
+
+
+# --------------------------------------------------
+# Hypoxia type moderator
+# --------------------------------------------------
+
+short_type <- rma.mv(
+  yi,
+  vi,
+  mods = ~ T.2,
+  random = ~ 1 | study,
+  data = short_type_data,
+  method = "REML"
+)
+
+
+# ==================================================
+# FUNCTION TO EXTRACT MODERATOR RESULTS
+# ==================================================
+
+extract_moderator_results <- function(model, model_name) {
+
+  model_summary <- summary(model)
+
+  data.frame(
+    Moderator_Model = model_name,
+    Term = rownames(model_summary$beta),
+    Estimate = model_summary$beta[, 1],
+    SE = model_summary$se,
+    zval = model_summary$zval,
+    pval = model_summary$pval,
+    CI_Lower = model_summary$ci.lb,
+    CI_Upper = model_summary$ci.ub
+  )
+}
+
+
+# ==================================================
+# EXTRACT COEFFICIENT RESULTS
+# ==================================================
+
+severity_results <- extract_moderator_results(
+  short_severity,
+  "Severity"
+)
+
+duration_results <- extract_moderator_results(
+  short_duration,
+  "Duration"
+)
+
+age_results <- extract_moderator_results(
+  short_age,
+  "Age"
+)
+
+type_results <- extract_moderator_results(
+  short_type,
+  "Hypoxia Type"
+)
+
+
+# ==================================================
+# CLEAN TERM LABELS
+# ==================================================
+
+moderator_results <- bind_rows(
+  severity_results,
+  duration_results,
+  age_results,
+  type_results
+) %>%
+  mutate(
+    Term = case_when(
+      Term == "intrcpt" ~ "Intercept",
+      Term == "Severity_c" ~ "Severity",
+      Term == "log_duration_c" ~ "Log Duration",
+      Term == "Age_c" ~ "Age",
+      grepl("T\\.2", Term) ~
+        gsub("T\\.2", "Hypoxia Type: ", Term),
+      TRUE ~ Term
+    )
+  ) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  moderator_results,
+  caption = "Exploratory Univariable Moderator Models: Short-Term Memory (Gsm)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# MODERATOR MODEL FIT STATISTICS
+# ==================================================
+
+extract_model_fit <- function(model, model_name, data) {
+
+  model_summary <- summary(model)
+
+  data.frame(
+    Model = model_name,
+    Effect_Sizes = model$k,
+    Studies = n_distinct(data$study),
+    QE = model$QE,
+    QE_df = model$k - model$p,
+    QE_p = model$QEp,
+    QM = model$QM,
+    QM_df = model$p - 1,
+    QM_p = model$QMp,
+    AIC = AIC(model),
+    BIC = BIC(model),
+    LogLik = as.numeric(logLik(model)),
+    Tau2 = sum(model$sigma2)
+  )
+}
+
+
+severity_fit <- extract_model_fit(
+  short_severity,
+  "Severity",
+  short_severity_data
+)
+
+duration_fit <- extract_model_fit(
+  short_duration,
+  "Duration",
+  short_duration_data
+)
+
+age_fit <- extract_model_fit(
+  short_age,
+  "Age",
+  short_age_data
+)
+
+type_fit <- extract_model_fit(
+  short_type,
+  "Hypoxia Type",
+  short_type_data
+)
+
+
+moderator_fit_stats <- bind_rows(
+  severity_fit,
+  duration_fit,
+  age_fit,
+  type_fit
+) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  moderator_fit_stats,
+  caption = "Model Fit Statistics for Exploratory Moderator Models: Short-Term Memory (Gsm)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# NUMBER OF EFFECT SIZES AND STUDIES
+# CONTRIBUTING TO EACH MODERATOR MODEL
+# ==================================================
+
+moderator_k <- data.frame(
+  Model = c(
+    "Severity",
+    "Duration",
+    "Age",
+    "Hypoxia Type"
+  ),
+
+  Effect_Sizes = c(
+    nrow(short_severity_data),
+    nrow(short_duration_data),
+    nrow(short_age_data),
+    nrow(short_type_data)
+  ),
+
+  Studies = c(
+    n_distinct(short_severity_data$study),
+    n_distinct(short_duration_data$study),
+    n_distinct(short_age_data$study),
+    n_distinct(short_type_data$study)
+  )
+)
+
+
+kable(
+  moderator_k,
+  caption = "Data Contributing to Exploratory Moderator Models: Short-Term Memory (Gsm)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# FUNNEL PLOT
+# ==================================================
+
+funnel(
+  short_meta_red,
+  main = "Funnel Plot: Short-Term Memory (Gsm)"
+)
+
+
+# ==================================================
+# TRIM-AND-FILL MODEL
+# ==================================================
+
+tf_model <- trimfill(short_meta_red)
+
+tf_summary <- summary(tf_model)
+
+
+# -----------------------------
+# Trim-and-fill coefficient
+# -----------------------------
+
+tf_model_stats <- data.frame(
+  Term = "Trim-and-Fill Effect",
+  Estimate = tf_summary$beta[, 1],
+  SE = tf_summary$se,
+  zval = tf_summary$zval,
+  pval = tf_summary$pval,
+  CI_Lower = tf_summary$ci.lb,
+  CI_Upper = tf_summary$ci.ub
+) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  tf_model_stats,
+  caption = "Trim-and-Fill Corrected Model: Short-Term Memory (Gsm)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# -----------------------------
+# Number of imputed studies
+# -----------------------------
+
+trimfill_stats <- data.frame(
+  Statistic = c(
+    "Observed Effect Sizes",
+    "Imputed Effect Sizes",
+    "Total Effect Sizes After Trim-and-Fill"
+  ),
+
+  Value = c(
+    short_meta_red$k,
+    tf_model$k0,
+    tf_model$k
+  )
+)
+
+
+kable(
+  trimfill_stats,
+  caption = "Trim-and-Fill Imputation Summary: Short-Term Memory (Gsm)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+```
+
+# Decision speed / reaction time (Gt)
+```{r}
+
+# ==================================================
+# SUBSET DATA
+# ==================================================
+
+decision_data <- cog_ability_filt %>%
+  filter(chc_code == "gt")
+
+
+# Complete-case datasets for moderator analyses
+
+decision_severity_data <- decision_data %>%
+  filter(!is.na(Severity_c))
+
+# No missing duration data for Gt, but defining this
+# explicitly keeps the framework consistent
+decision_duration_data <- decision_data %>%
+  filter(!is.na(log_duration_c))
+
+decision_age_data <- decision_data %>%
+  filter(!is.na(Age_c))
+
+
+# Restrict hypoxia type analysis to the two adequately
+# represented categories
+
+decision_type_data <- decision_data %>%
+  filter(
+    T.2 %in% c(
+      "hypobaric hypoxia",
+      "normobaric hypoxia"
+    )
+  ) %>%
+  droplevels()
+
+
+# ==================================================
+# MAIN EFFECT MODEL
+# ==================================================
+
+decision_meta_red <- rma(
+  yi = yi,
+  vi = vi,
+  data = decision_data,
+  method = "REML"
+)
+
+
+summary_red <- summary(decision_meta_red)
+
+
+# -----------------------------
+# Main effect coefficient
+# -----------------------------
+
+model_stats <- data.frame(
+  Term = "Overall Effect",
+  Estimate = summary_red$beta[, 1],
+  SE = summary_red$se,
+  zval = summary_red$zval,
+  pval = summary_red$pval,
+  CI_Lower = summary_red$ci.lb,
+  CI_Upper = summary_red$ci.ub
+) %>%
+  mutate(
+    across(where(is.numeric), round, digits = 3)
+  )
+
+
+kable(
+  model_stats,
+  caption = "Main Effect Model: Decision Speed / Reaction Time (Gt)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# MAIN EFFECT MODEL FIT AND HETEROGENEITY
+# ==================================================
+
+# 95% prediction interval
+
+decision_pred <- predict(
+  decision_meta_red,
+  level = 95
+)
+
+
+main_fit_stats <- data.frame(
+  Statistic = c(
+    "Effect Sizes (k)",
+    "Independent Studies",
+    "Q",
+    "Q df",
+    "Q p-value",
+    "I² (%)",
+    "Tau²",
+    "Tau",
+    "95% Prediction Interval Lower",
+    "95% Prediction Interval Upper"
+  ),
+
+  Value = c(
+    decision_meta_red$k,
+    n_distinct(decision_data$study),
+    decision_meta_red$QE,
+    decision_meta_red$k - decision_meta_red$p,
+    decision_meta_red$QEp,
+    decision_meta_red$I2,
+    decision_meta_red$tau2,
+    sqrt(decision_meta_red$tau2),
+    decision_pred$pi.lb,
+    decision_pred$pi.ub
+  )
+) %>%
+  mutate(
+    Value = round(Value, 3)
+  )
+
+
+kable(
+  main_fit_stats,
+  caption = "Model Fit and Heterogeneity Statistics: Decision Speed / Reaction Time (Gt)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# EXPLORATORY UNIVARIABLE MODERATOR MODELS
+# ==================================================
+
+
+# --------------------------------------------------
+# Severity moderator
+# --------------------------------------------------
+
+decision_severity <- rma.mv(
+  yi,
+  vi,
+  mods = ~ Severity_c,
+  random = ~ 1 | study,
+  data = decision_severity_data,
+  method = "REML"
+)
+
+
+# --------------------------------------------------
+# Duration moderator
+# --------------------------------------------------
+
+decision_duration <- rma.mv(
+  yi,
+  vi,
+  mods = ~ log_duration_c,
+  random = ~ 1 | study,
+  data = decision_duration_data,
+  method = "REML"
+)
+
+
+# --------------------------------------------------
+# Age moderator
+# --------------------------------------------------
+
+decision_age <- rma.mv(
+  yi,
+  vi,
+  mods = ~ Age_c,
+  random = ~ 1 | study,
+  data = decision_age_data,
+  method = "REML"
+)
+
+
+# --------------------------------------------------
+# Hypoxia type moderator
+# --------------------------------------------------
+
+decision_type <- rma.mv(
+  yi,
+  vi,
+  mods = ~ T.2,
+  random = ~ 1 | study,
+  data = decision_type_data,
+  method = "REML"
+)
+
+
+# ==================================================
+# FUNCTION TO EXTRACT MODERATOR RESULTS
+# ==================================================
+
+extract_moderator_results <- function(model, model_name) {
+
+  model_summary <- summary(model)
+
+  data.frame(
+    Moderator_Model = model_name,
+    Term = rownames(model_summary$beta),
+    Estimate = model_summary$beta[, 1],
+    SE = model_summary$se,
+    zval = model_summary$zval,
+    pval = model_summary$pval,
+    CI_Lower = model_summary$ci.lb,
+    CI_Upper = model_summary$ci.ub
+  )
+}
+
+
+# ==================================================
+# EXTRACT COEFFICIENT RESULTS
+# ==================================================
+
+severity_results <- extract_moderator_results(
+  decision_severity,
+  "Severity"
+)
+
+duration_results <- extract_moderator_results(
+  decision_duration,
+  "Duration"
+)
+
+age_results <- extract_moderator_results(
+  decision_age,
+  "Age"
+)
+
+type_results <- extract_moderator_results(
+  decision_type,
+  "Hypoxia Type"
+)
+
+
+# ==================================================
+# COMBINE AND CLEAN MODERATOR RESULTS
+# ==================================================
+
+moderator_results <- bind_rows(
+  severity_results,
+  duration_results,
+  age_results,
+  type_results
+) %>%
+  mutate(
+    Term = case_when(
+      Term == "intrcpt" ~ "Intercept",
+      Term == "Severity_c" ~ "Severity",
+      Term == "log_duration_c" ~ "Log Duration",
+      Term == "Age_c" ~ "Age",
+      grepl("T\\.2", Term) ~
+        gsub("T\\.2", "Hypoxia Type: ", Term),
+      TRUE ~ Term
+    )
+  ) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  moderator_results,
+  caption = "Exploratory Univariable Moderator Models: Decision Speed / Reaction Time (Gt)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# MODERATOR MODEL FIT STATISTICS
+# ==================================================
+
+extract_model_fit <- function(model, model_name, data) {
+
+  data.frame(
+    Model = model_name,
+    Effect_Sizes = model$k,
+    Studies = n_distinct(data$study),
+    QE = model$QE,
+    QE_df = model$k - model$p,
+    QE_p = model$QEp,
+    QM = model$QM,
+    QM_df = model$p - 1,
+    QM_p = model$QMp,
+    AIC = AIC(model),
+    BIC = BIC(model),
+    LogLik = as.numeric(logLik(model)),
+    Variance_Component = sum(model$sigma2)
+  )
+}
+
+
+severity_fit <- extract_model_fit(
+  decision_severity,
+  "Severity",
+  decision_severity_data
+)
+
+duration_fit <- extract_model_fit(
+  decision_duration,
+  "Duration",
+  decision_duration_data
+)
+
+age_fit <- extract_model_fit(
+  decision_age,
+  "Age",
+  decision_age_data
+)
+
+type_fit <- extract_model_fit(
+  decision_type,
+  "Hypoxia Type",
+  decision_type_data
+)
+
+
+moderator_fit_stats <- bind_rows(
+  severity_fit,
+  duration_fit,
+  age_fit,
+  type_fit
+) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  moderator_fit_stats,
+  caption = "Model Fit Statistics for Exploratory Moderator Models: Decision Speed / Reaction Time (Gt)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# NUMBER OF EFFECT SIZES AND STUDIES CONTRIBUTING
+# ==================================================
+
+moderator_k <- data.frame(
+  Model = c(
+    "Severity",
+    "Duration",
+    "Age",
+    "Hypoxia Type"
+  ),
+
+  Effect_Sizes = c(
+    nrow(decision_severity_data),
+    nrow(decision_duration_data),
+    nrow(decision_age_data),
+    nrow(decision_type_data)
+  ),
+
+  Studies = c(
+    n_distinct(decision_severity_data$study),
+    n_distinct(decision_duration_data$study),
+    n_distinct(decision_age_data$study),
+    n_distinct(decision_type_data$study)
+  )
+)
+
+
+kable(
+  moderator_k,
+  caption = "Data Contributing to Exploratory Moderator Models: Decision Speed / Reaction Time (Gt)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# FUNNEL PLOT
+# ==================================================
+
+funnel(
+  decision_meta_red,
+  main = "Funnel Plot: Decision Speed / Reaction Time (Gt)"
+)
+
+
+# ==================================================
+# TRIM-AND-FILL MODEL
+# ==================================================
+
+tf_model <- trimfill(decision_meta_red)
+
+tf_summary <- summary(tf_model)
+
+
+# -----------------------------
+# Trim-and-fill coefficient
+# -----------------------------
+
+tf_model_stats <- data.frame(
+  Term = "Trim-and-Fill Effect",
+  Estimate = tf_summary$beta[, 1],
+  SE = tf_summary$se,
+  zval = tf_summary$zval,
+  pval = tf_summary$pval,
+  CI_Lower = tf_summary$ci.lb,
+  CI_Upper = tf_summary$ci.ub
+) %>%
+  mutate(
+    across(
+      where(is.numeric),
+      round,
+      digits = 3
+    )
+  )
+
+
+kable(
+  tf_model_stats,
+  caption = "Trim-and-Fill Corrected Model: Decision Speed / Reaction Time (Gt)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ==================================================
+# TRIM-AND-FILL IMPUTATION SUMMARY
+# ==================================================
+
+trimfill_stats <- data.frame(
+  Statistic = c(
+    "Observed Effect Sizes",
+    "Imputed Effect Sizes",
+    "Total Effect Sizes After Trim-and-Fill"
+  ),
+
+  Value = c(
+    decision_meta_red$k,
+    tf_model$k0,
+    tf_model$k
+  )
+)
+
+
+kable(
+  trimfill_stats,
+  caption = "Trim-and-Fill Imputation Summary: Decision Speed / Reaction Time (Gt)"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+```
+
+# Visual processing (Gv)
+```{r}
+
+# ============================================================
+# SUBSET DATA
+# ============================================================
+
+visual_data <- cog_ability_filt %>%
+  filter(chc_code == "gv")
+
+
+# ============================================================
+# MAIN EFFECT MODEL
+# ============================================================
+
+visual_meta_red <- rma(
+  yi = yi,
+  vi = vi,
+  data = visual_data,
+  method = "REML"
+)
+
+
+# ============================================================
+# EXTRACT MAIN EFFECT RESULTS
+# ============================================================
+
+summary_red <- summary(visual_meta_red)
+
+model_stats <- data.frame(
+  Term      = "Overall effect",
+  Estimate  = as.numeric(summary_red$beta),
+  SE        = summary_red$se,
+  zval      = summary_red$zval,
+  pval      = summary_red$pval,
+  CI_Lower  = summary_red$ci.lb,
+  CI_Upper  = summary_red$ci.ub
+)
+
+model_stats <- model_stats %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+kable(
+  model_stats,
+  caption = "Main Effect Model: Visual Processing"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ============================================================
+# MODEL FIT, HETEROGENEITY, AND PREDICTION INTERVAL
+# ============================================================
+
+# Number of effect sizes
+k_effect_sizes <- visual_meta_red$k
+
+# Number of unique studies
+k_studies <- n_distinct(visual_data$study)
+
+# Heterogeneity statistics
+heterogeneity_stats <- data.frame(
+  Statistic = c(
+    "Effect sizes",
+    "Independent studies",
+    "Tau squared",
+    "Tau",
+    "I squared (%)",
+    "Q",
+    "Q df",
+    "Q p-value"
+  ),
+  
+  Value = c(
+    k_effect_sizes,
+    k_studies,
+    visual_meta_red$tau2,
+    sqrt(visual_meta_red$tau2),
+    visual_meta_red$I2,
+    visual_meta_red$QE,
+    visual_meta_red$k - visual_meta_red$p,
+    visual_meta_red$QEp
+  )
+)
+
+
+# Round numeric values
+heterogeneity_stats <- heterogeneity_stats %>%
+  mutate(
+    Value = case_when(
+      Statistic == "Q p-value" ~ format.pval(
+        as.numeric(Value),
+        digits = 3,
+        eps = 0.001
+      ),
+      TRUE ~ as.character(round(as.numeric(Value), 3))
+    )
+  )
+
+
+kable(
+  heterogeneity_stats,
+  caption = "Heterogeneity Statistics: Visual Processing"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ============================================================
+# PREDICTION INTERVAL
+# ============================================================
+
+# Prediction interval for the random-effects model
+pred_interval <- predict(visual_meta_red)
+
+prediction_interval <- data.frame(
+  Estimate = round(pred_interval$pred, 3),
+  PI_Lower = round(pred_interval$pi.lb, 3),
+  PI_Upper = round(pred_interval$pi.ub, 3)
+)
+
+
+kable(
+  prediction_interval,
+  caption = "Prediction Interval: Visual Processing"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ============================================================
+# MODERATOR ANALYSES
+# ============================================================
+
+# Moderator analyses were not conducted because visual processing
+# included only 4 independent studies. Meta-regression with this
+# number of studies would be substantially underpowered and likely
+# to produce unstable estimates.
+#
+# Hypoxia type was also not examined because the distribution was
+# highly imbalanced across categories. Therefore, no meaningful
+# comparison between hypoxia types could be conducted.
+
+
+# ============================================================
+# FUNNEL PLOT
+# ============================================================
+
+# Interpret with extreme caution due to the small number of
+# independent studies. Funnel plot asymmetry cannot be meaningfully
+# assessed with only 4 studies.
+
+funnel(
+  visual_meta_red,
+  main = "Funnel Plot: Visual Processing (Gv)"
+)
+
+
+# ============================================================
+# TRIM-AND-FILL MODEL
+# ============================================================
+
+# Trim-and-fill is exploratory only because the analysis includes
+# very few independent studies and estimates from this procedure
+# are unreliable with such a small k.
+
+tf_model <- trimfill(visual_meta_red)
+
+tf_summary <- summary(tf_model)
+
+tf_model_stats <- data.frame(
+  Term      = "Trim-and-fill adjusted effect",
+  Estimate  = as.numeric(tf_summary$beta),
+  SE        = tf_summary$se,
+  zval      = tf_summary$zval,
+  pval      = tf_summary$pval,
+  CI_Lower  = tf_summary$ci.lb,
+  CI_Upper  = tf_summary$ci.ub
+)
+
+tf_model_stats <- tf_model_stats %>%
+  mutate(across(where(is.numeric), round, digits = 3))
+
+
+kable(
+  tf_model_stats,
+  caption = "Trim-and-Fill Corrected Model: Visual Processing"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+
+
+# ============================================================
+# TRIM-AND-FILL DIAGNOSTICS
+# ============================================================
+
+trimfill_diagnostics <- data.frame(
+  Statistic = c(
+    "Observed effect sizes",
+    "Imputed effect sizes",
+    "Total effect sizes"
+  ),
+  
+  Value = c(
+    visual_meta_red$k,
+    tf_model$k0,
+    tf_model$k
+  )
+)
+
+
+kable(
+  trimfill_diagnostics,
+  caption = "Trim-and-Fill Diagnostics: Visual Processing"
+) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position")
+  )
+```
